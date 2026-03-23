@@ -1299,25 +1299,31 @@
 <!-- FOOTER -->
 <footer>
   <div class="footer-top">
+    <!-- 왼쪽: SAFETY EDU 로고 -->
     <div>
-      <div class="footer-logo" id="hp-footer-logo-wrap">
+      <div class="footer-logo" id="hp-footer-logo-wrap" style="margin-bottom:0.4rem;">
         <img id="hp-footer-logo-img" src="" alt="미래솔 SAFETY EDU" style="display:none; max-height:48px; max-width:200px;">
         <span id="hp-footer-logo-text">미래솔<span> SAFETY EDU</span></span>
       </div>
-      <p id="hp-footer-desc" style="color:rgba(255,255,255,0.4); font-size:0.8rem; margin-top:0.5rem;">고용노동부 인정 안전보건교육기관</p>
+      <p id="hp-footer-desc" style="color:rgba(255,255,255,0.4); font-size:0.8rem;">고용노동부 인정 안전보건교육기관</p>
     </div>
-    <div class="footer-contact">
-      <p><strong>대표번호</strong> <span id="hp-footer-phone">02-6952-2350</span></p>
-      <p><strong>이메일</strong> <span id="hp-footer-email">edu@miraesol.kr</span></p>
-      <p><strong>운영시간</strong> <span id="hp-footer-hours">평일 09:00 ~ 17:00 (점심 12:00~13:30)</span></p>
+
+    <!-- 오른쪽: 회사정보 + 운영시간 -->
+    <div id="hp-company-info" style="font-size:0.78rem; color:rgba(255,255,255,0.55); line-height:2;">
+      <span id="hp-company-line1">주식회사 미래솔 &nbsp;|&nbsp; 서울특별시 영등포구 경인로 775, 1동 10층 1007호(문래동3가, 에이스하이테크시티)</span><br>
+      <span id="hp-company-line2">대표전화 : <span id="hp-footer-phone">02-6952-2350</span> &nbsp;|&nbsp; 팩스 : 02-2068-8902 &nbsp;|&nbsp; 대표자 : 김은경</span><br>
+      <span id="hp-company-line3">이메일 : <span id="hp-footer-email">edu@miraesol.kr</span> &nbsp;|&nbsp; 개인정보보호 관리자 : 오동준</span><br>
+      <span id="hp-company-line4">사업자 등록번호 : 714-86-03283 &nbsp;|&nbsp; 원격평생교육시설 신고번호 : 제1067호</span><br>
+      <span id="hp-footer-hours-wrap">운영시간 : <span id="hp-footer-hours">평일 09:00 ~ 17:00 (점심 12:00~13:30)</span></span><br>
+      <span id="hp-company-copyright" style="color:#6baed6; font-size:0.74rem;">본 사이트 내의 컨텐츠는 저작권법 상의 보호를 받고 있습니다.</span>
     </div>
   </div>
   <div class="footer-bottom" id="hp-footer-bottom">
-    © 2026 (주)미래솔. All rights reserved. | 사업자등록번호: 000-00-00000 | 대표: 홍길동
+    © 2026 (주)미래솔. All rights reserved.
   </div>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
 
 <!-- 등록증 패널 fixed -->
 <div id="certPanel" style="display:none; position:fixed; z-index:9999; top:50%; right:10%; transform:translateY(-50%); width:368px; border-radius:10px; overflow:hidden; box-shadow:0 24px 64px rgba(0,0,0,0.7); border:2px solid rgba(245,166,35,0.5); transition:opacity 0.4s ease, transform 0.45s cubic-bezier(0.22,1,0.36,1); opacity:0; transform:translateY(-50%) translateX(60px);">
@@ -1433,6 +1439,27 @@
     } else {
       if (fimg) fimg.style.display = 'none';
       if (ftxt) ftxt.style.display = '';
+    }
+  }
+
+  // 7. 회사정보 바
+  var company = getData('company', null);
+  if (company) {
+    var el;
+    el = document.getElementById('hp-company-line1'); if(el) el.innerHTML = company.line1;
+    el = document.getElementById('hp-company-line2'); if(el) el.innerHTML = company.line2;
+    el = document.getElementById('hp-company-line3'); if(el) el.innerHTML = company.line3;
+    el = document.getElementById('hp-company-line4'); if(el) el.innerHTML = company.line4;
+    el = document.getElementById('hp-company-copyright'); if(el) el.innerHTML = company.copyright;
+
+    var cimg = document.getElementById('hp-company-logo-img');
+    var ctxt = document.getElementById('hp-company-logo-text');
+    if (company.logoImg) {
+      if (cimg) { cimg.src = company.logoImg; cimg.style.display = 'block'; }
+      if (ctxt) ctxt.style.display = 'none';
+    } else {
+      if (cimg) cimg.style.display = 'none';
+      if (ctxt) ctxt.style.display = '';
     }
   }
 
@@ -1561,21 +1588,4 @@
 <script>
   (function() {
     var badge = document.getElementById('certBadge');
-    var panel = document.getElementById('certPanel');
-    if (!badge || !panel) return;
-    badge.addEventListener('mouseenter', function() {
-      panel.style.display = 'block';
-      panel.offsetHeight;
-      panel.style.opacity = '1';
-      panel.style.transform = 'translateY(-50%) translateX(0)';
-    });
-    badge.addEventListener('mouseleave', function() {
-      panel.style.opacity = '0';
-      panel.style.transform = 'translateY(-50%) translateX(60px)';
-      setTimeout(function(){ panel.style.display = 'none'; }, 450);
-    });
-  })();
-</script>
-
-</body>
-</html>
+    
