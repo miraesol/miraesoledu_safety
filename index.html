@@ -553,6 +553,17 @@
     .hero-stats { position: static; margin-top: 3rem; justify-content: flex-start; }
     .hero { padding-bottom: 4rem; }
     nav .nav-links { display: none; }
+
+    /* 교육방식·교육과정 2칸 → 1칸 */
+    .mobile-2col {
+      grid-template-columns: 1fr !important;
+    }
+
+    /* 교육일정 4칸 → 1칸 */
+    #hp-schedule-cards,
+    .schedule-cards {
+      grid-template-columns: 1fr !important;
+    }
   }
 </style>
 </head>
@@ -741,7 +752,7 @@
   </div>
 
   <!-- Two cards -->
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; max-width:960px; margin:0 auto 3rem; position:relative; z-index:1;">
+  <div class="mobile-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; max-width:960px; margin:0 auto 3rem; position:relative; z-index:1;">
 
     <!-- Zoom card -->
     <div class="dark-hover-card" style="background:var(--white); border:1.5px solid var(--gray-200); border-radius:16px; padding:2.5rem; position:relative; overflow:hidden;">
@@ -851,7 +862,7 @@
   </div>
 
   <!-- 두 컬럼 레이아웃 -->
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; margin-top:3rem;">
+  <div class="mobile-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; margin-top:3rem;">
 
     <!-- STEP 01 : Zoom 실시간 -->
     <div class="dark-hover-card" style="background:var(--white); border:1.5px solid var(--gray-200); border-radius:16px; overflow:hidden;">
