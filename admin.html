@@ -244,8 +244,7 @@
     <div class="nav-item" onclick="showPage('fee')"><span class="icon">💳</span> 교육비·계좌</div>
     <div class="nav-item" onclick="showPage('contact')"><span class="icon">📞</span> 연락처</div>
     <div class="nav-item" onclick="showPage('faq')"><span class="icon">❓</span> 자주 묻는 질문</div>
-    <div class="nav-item" onclick="showPage('footer')"><span class="icon">🔽</span> 하단 푸터</div>
-    <div class="nav-item" onclick="showPage('company')"><span class="icon">🏢</span> 회사정보 바</div>
+    <div class="nav-item" onclick="showPage('footer')"><span class="icon">🏢</span> 하단 정보 관리</div>
     <div class="nav-item" onclick="showPage('password')"><span class="icon">🔒</span> 비밀번호 변경</div>
     <div class="sidebar-footer">
       <button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button>
@@ -293,8 +292,7 @@
             <tr><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);">💳 교육비·계좌</td><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-600);">교육비 금액, 은행명, 계좌번호</td></tr>
             <tr><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);">📞 연락처</td><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-600);">전화번호, 이메일, 운영시간</td></tr>
             <tr><td style="padding:10px 12px;">❓ 자주 묻는 질문</td><td style="padding:10px 12px;color:var(--gray-600);">FAQ 질문·답변 추가·수정·삭제</td></tr>
-            <tr><td style="padding:10px 12px;">🔽 하단 푸터</td><td style="padding:10px 12px;color:var(--gray-600);">로고 이미지·설명·저작권 정보 수정</td></tr>
-            <tr><td style="padding:10px 12px;">🏢 회사정보 바</td><td style="padding:10px 12px;color:var(--gray-600);">회사명·주소·전화·로고 등 하단 회사정보 수정</td></tr>
+            <tr><td style="padding:10px 12px;">🏢 하단 정보 관리</td><td style="padding:10px 12px;color:var(--gray-600);">로고·회사정보·연락처·저작권 등 하단 전체 수정</td></tr>
           </tbody>
         </table>
       </div>
@@ -437,130 +435,77 @@
     </div>
 
     <!-- 하단 푸터 -->
+    <!-- 하단 정보 관리 (통합) -->
     <div class="page" id="page-footer">
       <div class="page-header">
-        <div class="page-title">하단 푸터<small>홈페이지 최하단 영역을 수정합니다</small></div>
-        <button class="btn-save" onclick="saveFooter()">💾 저장</button>
+        <div class="page-title">하단 정보 관리<small>홈페이지 하단 푸터 전체를 수정합니다</small></div>
+        <button class="btn-save" onclick="saveAllFooter()">💾 저장</button>
       </div>
 
-      <!-- 로고 -->
+      <!-- SAFETY EDU 로고 -->
       <div class="card">
-        <div class="card-title">로고 설정</div>
+        <div class="card-title">① SAFETY EDU 로고</div>
         <div class="field">
-          <label>로고 방식 선택</label>
+          <label>로고 방식</label>
           <select id="footer-logo-type" onchange="toggleLogoType()">
-            <option value="text">텍스트 로고 (미래솔 SAFETY EDU)</option>
-            <option value="image">이미지 로고</option>
+            <option value="text">텍스트 (미래솔 SAFETY EDU)</option>
+            <option value="image">이미지 업로드</option>
           </select>
         </div>
-        <!-- 이미지 업로드 영역 -->
         <div id="footer-logo-image-area" style="display:none;">
           <div class="field">
-            <label>로고 이미지 업로드</label>
+            <label>로고 이미지 (PNG 권장, 500KB 이하)</label>
             <input type="file" id="footer-logo-file" accept="image/*" onchange="previewLogo(this)"
               style="border:1.5px dashed var(--gray-200); border-radius:8px; padding:0.8rem; width:100%; cursor:pointer; font-family:inherit;">
           </div>
-          <div id="footer-logo-preview" style="margin-top:0.5rem; display:none;">
+          <div id="footer-logo-preview" style="display:none; margin-top:0.5rem;">
             <div style="background:var(--navy); padding:1rem; border-radius:8px; display:inline-block;">
-              <img id="footer-logo-preview-img" src="" alt="미리보기" style="max-height:60px; max-width:220px; display:block;">
+              <img id="footer-logo-preview-img" src="" style="max-height:50px; max-width:200px; display:block;">
             </div>
-            <p style="font-size:0.78rem;color:var(--gray-400);margin-top:0.4rem;">↑ 실제 푸터 배경(어두운 색)에서의 미리보기</p>
             <button class="btn-del" style="margin-top:0.5rem;" onclick="removeLogo()">이미지 삭제</button>
           </div>
         </div>
-      </div>
-
-      <!-- 회사 설명 -->
-      <div class="card">
-        <div class="card-title">로고 하단 설명 문구</div>
-        <div class="field">
-          <label>설명 문구 (로고 아래 작은 글씨)</label>
+        <div class="field" style="margin-top:0.5rem;">
+          <label>로고 아래 설명 문구</label>
           <input type="text" id="footer-desc" value="고용노동부 인정 안전보건교육기관">
         </div>
       </div>
 
-      <!-- 저작권 -->
+      <!-- 회사 정보 -->
       <div class="card">
-        <div class="card-title">하단 저작권 정보</div>
+        <div class="card-title">② 회사 정보 (오른쪽 영역)</div>
+        <div class="field">
+          <label>1번 줄 — 회사명 · 주소</label>
+          <input type="text" id="company-line1" value="주식회사 미래솔 &nbsp;|&nbsp; 서울특별시 영등포구 경인로 775, 1동 10층 1007호(문래동3가, 에이스하이테크시티)">
+        </div>
+        <div class="field">
+          <label>2번 줄 — 전화 · 팩스 · 대표자</label>
+          <input type="text" id="company-line2" value="대표전화 : 02-6952-2350 &nbsp;|&nbsp; 팩스 : 02-2068-8902 &nbsp;|&nbsp; 대표자 : 김은경">
+        </div>
+        <div class="field">
+          <label>3번 줄 — 이메일 · 개인정보보호</label>
+          <input type="text" id="company-line3" value="이메일 : edu@miraesol.kr &nbsp;|&nbsp; 개인정보보호 관리자 : 오동준">
+        </div>
+        <div class="field">
+          <label>4번 줄 — 사업자등록번호 · 신고번호</label>
+          <input type="text" id="company-line4" value="사업자 등록번호 : 714-86-03283 &nbsp;|&nbsp; 원격평생교육시설 신고번호 : 제1067호">
+        </div>
+        <div class="field">
+          <label>5번 줄 — 운영시간</label>
+          <input type="text" id="footer-hours" value="운영시간 : 평일 09:00 ~ 17:00 (점심 12:00~13:30)">
+        </div>
+        <div class="field">
+          <label>저작권 문구 (파란색)</label>
+          <input type="text" id="company-copyright" value="본 사이트 내의 컨텐츠는 저작권법 상의 보호를 받고 있습니다.">
+        </div>
+      </div>
+
+      <!-- 최하단 -->
+      <div class="card">
+        <div class="card-title">③ 최하단 저작권 한 줄</div>
         <div class="field">
           <label>저작권 텍스트</label>
-          <input type="text" id="footer-bottom" value="© 2026 (주)미래솔. All rights reserved. | 사업자등록번호: 000-00-00000 | 대표: 홍길동">
-        </div>
-      </div>
-    </div>
-
-    <!-- 회사정보 바 -->
-    <div class="page" id="page-company">
-      <div class="page-header">
-        <div class="page-title">회사정보 바<small>홈페이지 하단 회사 정보 영역을 수정합니다</small></div>
-        <button class="btn-save" onclick="saveCompany()">💾 저장</button>
-      </div>
-
-      <!-- 미리보기 -->
-      <div class="card" style="background:#f8f9fa; border-color:#e0e0e0;">
-        <div class="card-title">현재 모습 미리보기</div>
-        <div style="display:flex; align-items:center; gap:1.5rem; padding:0.5rem 0;">
-          <div style="flex-shrink:0;">
-            <img id="admin-company-preview-img" src="" style="display:none; max-height:52px; max-width:140px;">
-            <span id="admin-company-preview-txt" style="font-size:1.1rem; font-weight:900; color:var(--navy);">🔺 MIRAESOL</span>
-          </div>
-          <div style="font-size:0.78rem; color:#444; line-height:2;">
-            <span id="prev-line1">-</span><br>
-            <span id="prev-line2">-</span><br>
-            <span id="prev-line3">-</span><br>
-            <span id="prev-line4">-</span><br>
-            <span id="prev-copyright" style="color:#1a6cbf;">-</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 로고 -->
-      <div class="card">
-        <div class="card-title">로고 이미지</div>
-        <div class="field">
-          <label>로고 방식</label>
-          <select id="company-logo-type" onchange="toggleCompanyLogoType()">
-            <option value="text">텍스트 (🔺 MIRAESOL)</option>
-            <option value="image">이미지 업로드</option>
-          </select>
-        </div>
-        <div id="company-logo-upload-area" style="display:none;">
-          <div class="field">
-            <label>로고 이미지 파일 (PNG 권장, 500KB 이하)</label>
-            <input type="file" id="company-logo-file" accept="image/*" onchange="previewCompanyLogo(this)"
-              style="border:1.5px dashed var(--gray-200); border-radius:8px; padding:0.8rem; width:100%; cursor:pointer; font-family:inherit;">
-          </div>
-          <div id="company-logo-preview-wrap" style="display:none; margin-top:0.5rem;">
-            <div style="background:#f0f0f0; padding:0.8rem; border-radius:8px; display:inline-block;">
-              <img id="company-logo-preview-img" src="" style="max-height:52px; max-width:140px; display:block;">
-            </div>
-            <button class="btn-del" style="margin-top:0.5rem; display:block;" onclick="removeCompanyLogo()">이미지 삭제</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 회사 정보 텍스트 -->
-      <div class="card">
-        <div class="card-title">회사 정보 텍스트</div>
-        <div class="field">
-          <label>1번 줄 (회사명 · 주소)</label>
-          <input type="text" id="company-line1" value="주식회사 미래솔 &nbsp;|&nbsp; 서울특별시 영등포구 경인로 775, 1동 10층 1007호(문래동3가, 에이스하이테크시티)" oninput="updateCompanyPreview()">
-        </div>
-        <div class="field">
-          <label>2번 줄 (전화 · 팩스 · 대표자)</label>
-          <input type="text" id="company-line2" value="대표전화 : 02-6952-2350 &nbsp;|&nbsp; 팩스 : 02-2068-8902 &nbsp;|&nbsp; 대표자 : 김은경" oninput="updateCompanyPreview()">
-        </div>
-        <div class="field">
-          <label>3번 줄 (이메일 · 개인정보보호)</label>
-          <input type="text" id="company-line3" value="이메일 : edu@miraesol.kr &nbsp;|&nbsp; 개인정보보호 관리자 : 오동준" oninput="updateCompanyPreview()">
-        </div>
-        <div class="field">
-          <label>4번 줄 (사업자등록번호 · 신고번호)</label>
-          <input type="text" id="company-line4" value="사업자 등록번호 : 714-86-03283 &nbsp;|&nbsp; 원격평생교육시설 신고번호 : 제1067호" oninput="updateCompanyPreview()">
-        </div>
-        <div class="field">
-          <label>저작권 문구 (파란색으로 표시)</label>
-          <input type="text" id="company-copyright" value="본 사이트 내의 컨텐츠는 저작권법 상의 보호를 받고 있습니다." oninput="updateCompanyPreview()">
+          <input type="text" id="footer-bottom" value="© 2026 (주)미래솔. All rights reserved.">
         </div>
       </div>
     </div>
@@ -829,16 +774,32 @@ function saveFaq() {
 
 // ── FOOTER ──
 function initFooter() {
-  var d = getData('footer', { desc: '고용노동부 인정 안전보건교육기관', bottom: '© 2026 (주)미래솔. All rights reserved. | 사업자등록번호: 000-00-00000 | 대표: 홍길동', logoImg: '' });
-  document.getElementById('footer-desc').value   = d.desc;
-  document.getElementById('footer-bottom').value = d.bottom;
-  if (d.logoImg) {
+  var fd = getData('footer', { desc: '고용노동부 인정 안전보건교육기관', bottom: '© 2026 (주)미래솔. All rights reserved.', logoImg: '' });
+  var cd = getData('company', {
+    line1: '주식회사 미래솔 &nbsp;|&nbsp; 서울특별시 영등포구 경인로 775, 1동 10층 1007호(문래동3가, 에이스하이테크시티)',
+    line2: '대표전화 : 02-6952-2350 &nbsp;|&nbsp; 팩스 : 02-2068-8902 &nbsp;|&nbsp; 대표자 : 김은경',
+    line3: '이메일 : edu@miraesol.kr &nbsp;|&nbsp; 개인정보보호 관리자 : 오동준',
+    line4: '사업자 등록번호 : 714-86-03283 &nbsp;|&nbsp; 원격평생교육시설 신고번호 : 제1067호',
+    copyright: '본 사이트 내의 컨텐츠는 저작권법 상의 보호를 받고 있습니다.',
+    logoImg: ''
+  });
+  document.getElementById('footer-desc').value      = fd.desc;
+  document.getElementById('footer-bottom').value    = fd.bottom;
+  document.getElementById('company-line1').value    = cd.line1;
+  document.getElementById('company-line2').value    = cd.line2;
+  document.getElementById('company-line3').value    = cd.line3;
+  document.getElementById('company-line4').value    = cd.line4;
+  document.getElementById('company-copyright').value = cd.copyright;
+  if (cd.hours) document.getElementById('footer-hours').value = cd.hours;
+  if (fd.logoImg) {
     document.getElementById('footer-logo-type').value = 'image';
     document.getElementById('footer-logo-image-area').style.display = 'block';
     document.getElementById('footer-logo-preview').style.display = 'block';
-    document.getElementById('footer-logo-preview-img').src = d.logoImg;
+    document.getElementById('footer-logo-preview-img').src = fd.logoImg;
   }
 }
+function initCompany() {} // 통합됨
+
 function toggleLogoType() {
   var type = document.getElementById('footer-logo-type').value;
   document.getElementById('footer-logo-image-area').style.display = type === 'image' ? 'block' : 'none';
@@ -858,105 +819,41 @@ function removeLogo() {
   document.getElementById('footer-logo-file').value = '';
   document.getElementById('footer-logo-preview').style.display = 'none';
   document.getElementById('footer-logo-preview-img').src = '';
+  document.getElementById('footer-logo-type').value = 'text';
+  document.getElementById('footer-logo-image-area').style.display = 'none';
 }
-function saveFooter() {
+function saveAllFooter() {
+  // footer (로고·설명·저작권)
   var type = document.getElementById('footer-logo-type').value;
   var logoImg = '';
   if (type === 'image') {
-    var previewSrc = document.getElementById('footer-logo-preview-img').src;
-    if (previewSrc && previewSrc.startsWith('data:')) logoImg = previewSrc;
-  }
-  var d = {
-    desc:    document.getElementById('footer-desc').value,
-    bottom:  document.getElementById('footer-bottom').value,
-    logoImg: logoImg,
-  };
-  setData('footer', d);
-  showToast('하단 푸터가 저장되었습니다.');
-}
-
-// ── COMPANY ──
-const COMPANY_DEFAULT = {
-  line1: '주식회사 미래솔 &nbsp;|&nbsp; 서울특별시 영등포구 경인로 775, 1동 10층 1007호(문래동3가, 에이스하이테크시티)',
-  line2: '대표전화 : 02-6952-2350 &nbsp;|&nbsp; 팩스 : 02-2068-8902 &nbsp;|&nbsp; 대표자 : 김은경',
-  line3: '이메일 : edu@miraesol.kr &nbsp;|&nbsp; 개인정보보호 관리자 : 오동준',
-  line4: '사업자 등록번호 : 714-86-03283 &nbsp;|&nbsp; 원격평생교육시설 신고번호 : 제1067호',
-  copyright: '본 사이트 내의 컨텐츠는 저작권법 상의 보호를 받고 있습니다.',
-  logoImg: ''
-};
-function initCompany() {
-  var d = getData('company', COMPANY_DEFAULT);
-  document.getElementById('company-line1').value     = d.line1;
-  document.getElementById('company-line2').value     = d.line2;
-  document.getElementById('company-line3').value     = d.line3;
-  document.getElementById('company-line4').value     = d.line4;
-  document.getElementById('company-copyright').value = d.copyright;
-  if (d.logoImg) {
-    document.getElementById('company-logo-type').value = 'image';
-    document.getElementById('company-logo-upload-area').style.display = 'block';
-    document.getElementById('company-logo-preview-wrap').style.display = 'block';
-    document.getElementById('company-logo-preview-img').src = d.logoImg;
-    document.getElementById('admin-company-preview-img').src = d.logoImg;
-    document.getElementById('admin-company-preview-img').style.display = 'block';
-    document.getElementById('admin-company-preview-txt').style.display = 'none';
-  }
-  updateCompanyPreview();
-}
-function toggleCompanyLogoType() {
-  var type = document.getElementById('company-logo-type').value;
-  document.getElementById('company-logo-upload-area').style.display = type === 'image' ? 'block' : 'none';
-  if (type === 'text') {
-    document.getElementById('admin-company-preview-img').style.display = 'none';
-    document.getElementById('admin-company-preview-txt').style.display = '';
-  }
-}
-function previewCompanyLogo(input) {
-  if (!input.files || !input.files[0]) return;
-  var file = input.files[0];
-  if (file.size > 500 * 1024) return showToast('이미지 크기는 500KB 이하로 해주세요.', false);
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    document.getElementById('company-logo-preview-img').src = e.target.result;
-    document.getElementById('company-logo-preview-wrap').style.display = 'block';
-    document.getElementById('admin-company-preview-img').src = e.target.result;
-    document.getElementById('admin-company-preview-img').style.display = 'block';
-    document.getElementById('admin-company-preview-txt').style.display = 'none';
-  };
-  reader.readAsDataURL(file);
-}
-function removeCompanyLogo() {
-  document.getElementById('company-logo-file').value = '';
-  document.getElementById('company-logo-preview-wrap').style.display = 'none';
-  document.getElementById('company-logo-preview-img').src = '';
-  document.getElementById('admin-company-preview-img').style.display = 'none';
-  document.getElementById('admin-company-preview-txt').style.display = '';
-  document.getElementById('company-logo-type').value = 'text';
-  document.getElementById('company-logo-upload-area').style.display = 'none';
-}
-function updateCompanyPreview() {
-  ['line1','line2','line3','line4','copyright'].forEach(function(k) {
-    var el = document.getElementById('prev-' + k);
-    if (el) el.innerHTML = document.getElementById('company-' + k).value;
-  });
-}
-function saveCompany() {
-  var type = document.getElementById('company-logo-type').value;
-  var logoImg = '';
-  if (type === 'image') {
-    var src = document.getElementById('company-logo-preview-img').src;
+    var src = document.getElementById('footer-logo-preview-img').src;
     if (src && src.startsWith('data:')) logoImg = src;
   }
-  var d = {
+  setData('footer', {
+    desc:    document.getElementById('footer-desc').value,
+    bottom:  document.getElementById('footer-bottom').value,
+    logoImg: logoImg
+  });
+  // company (회사정보)
+  setData('company', {
     line1:     document.getElementById('company-line1').value,
     line2:     document.getElementById('company-line2').value,
     line3:     document.getElementById('company-line3').value,
     line4:     document.getElementById('company-line4').value,
+    hours:     document.getElementById('footer-hours').value,
     copyright: document.getElementById('company-copyright').value,
     logoImg:   logoImg
-  };
-  setData('company', d);
-  showToast('회사정보가 저장되었습니다.');
+  });
+  showToast('하단 정보가 저장되었습니다.');
 }
+// 구 함수 호환
+function saveFooter() { saveAllFooter(); }
+function saveCompany() { saveAllFooter(); }
+function toggleCompanyLogoType() {}
+function previewCompanyLogo() {}
+function removeCompanyLogo() {}
+function updateCompanyPreview() {}
 
 // ── PASSWORD ──
 function changePassword() {
