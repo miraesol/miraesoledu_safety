@@ -826,4 +826,10 @@ function updateDash() {
 }
 
 // ── UTIL ──
-function escHtml(s) { return s.replace(/&/g,'&amp;
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Enter key login
+document.getElementById('loginId').addEventListener('keydown', function(e) { if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>
