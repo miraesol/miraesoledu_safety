@@ -1418,13 +1418,20 @@
 })();
 </script>
 
-<!-- Gmail mailto 방식 -->
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
+  // EmailJS 설정값
+  var EMAILJS_PUBLIC_KEY  = 'tIXo1BYrDjw52bz-0';
+  var EMAILJS_SERVICE_ID  = 'service_7e4y57g';
+  var EMAILJS_TEMPLATE_ID = '2iiltsp';
+
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
   function handleSubmit(e) {
     e.preventDefault();
     var btn = document.getElementById('submit-btn');
 
-    // 필수값 체크
     var name     = document.getElementById('form-name').value.trim();
     var birth    = document.getElementById('form-birth').value.trim();
     var phone    = document.getElementById('form-phone').value.trim();
@@ -1441,57 +1448,56 @@
     if (!schedule) return alert('희망 교육 일정을 선택해 주세요.');
     if (!agree)    return alert('개인정보 수집·이용에 동의해 주세요.');
 
-    var email   = document.getElementById('form-email').value.trim() || '미입력';
-    var dept    = document.getElementById('form-dept').value.trim() || '미입력';
-    var message = document.getElementById('form-message').value.trim() || '없음';
+    btn.textContent = '전송 중...';
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
 
-    // 이메일 제목
-    var subject = '[미래솔 안전교육] 수강 신청 - ' + name;
+    var params = {
+      name:     name,
+      birth:    birth,
+      phone:    phone,
+      email:    document.getElementById('form-email').value.trim() || '미입력',
+      company:  company,
+      dept:     document.getElementById('form-dept').value.trim() || '미입력',
+      industry: industry,
+      schedule: schedule,
+      message:  document.getElementById('form-message').value.trim() || '없음',
+    };
 
-    // 이메일 본문
-    var body =
-      '[미래솔 안전교육 수강 신청서]\n\n' +
-      '■ 신청자 정보\n' +
-      '성명      : ' + name     + '\n' +
-      '생년월일  : ' + birth    + '\n' +
-      '연락처    : ' + phone    + '\n' +
-      '이메일    : ' + email    + '\n\n' +
-      '■ 소속 정보\n' +
-      '회사명    : ' + company  + '\n' +
-      '부서/직책 : ' + dept     + '\n' +
-      '업종      : ' + industry + '\n\n' +
-      '■ 교육 정보\n' +
-      '희망일정  : ' + schedule + '\n\n' +
-      '■ 문의사항\n' + message  + '\n\n' +
-      '─────────────────────────\n' +
-      '미래솔 안전교육 신청 홈페이지 접수';
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
+      .then(function() {
+        btn.textContent = '✅ 신청이 완료되었습니다!';
+        btn.style.background = '#4ade80';
+        btn.style.color = '#0a1628';
+        btn.style.opacity = '1';
 
-    // Gmail 바로 열기
-    var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1' +
-      '&to=' + encodeURIComponent('edu@miraesol.kr') +
-      '&su=' + encodeURIComponent(subject) +
-      '&body=' + encodeURIComponent(body);
+        ['form-name','form-birth','form-phone','form-email','form-company','form-dept','form-message'].forEach(function(id) {
+          document.getElementById(id).value = '';
+        });
+        document.getElementById('form-industry').value = '';
+        document.getElementById('form-schedule').value = '';
+        document.getElementById('form-agree').checked = false;
 
-    window.open(gmailUrl, '_blank');
-
-    // 완료 표시
-    btn.textContent = '✅ Gmail이 열렸습니다 — 보내기를 눌러주세요!';
-    btn.style.background = '#4ade80';
-    btn.style.color = '#0a1628';
-
-    // 폼 초기화
-    ['form-name','form-birth','form-phone','form-email','form-company','form-dept','form-message'].forEach(function(id) {
-      document.getElementById(id).value = '';
-    });
-    document.getElementById('form-industry').value = '';
-    document.getElementById('form-schedule').value = '';
-    document.getElementById('form-agree').checked = false;
-
-    setTimeout(function() {
-      btn.textContent = '신청서 제출하기 ✓';
-      btn.style.background = '';
-      btn.style.color = '';
-    }, 6000);
+        setTimeout(function() {
+          btn.textContent = '신청서 제출하기 ✓';
+          btn.style.background = '';
+          btn.style.color = '';
+          btn.disabled = false;
+        }, 5000);
+      })
+      .catch(function(err) {
+        console.error('EmailJS 오류:', err);
+        btn.textContent = '❌ 전송 실패 — 다시 시도해 주세요';
+        btn.style.background = '#ef4444';
+        btn.style.color = '#fff';
+        btn.style.opacity = '1';
+        btn.disabled = false;
+        setTimeout(function() {
+          btn.textContent = '신청서 제출하기 ✓';
+          btn.style.background = '';
+          btn.style.color = '';
+        }, 4000);
+      });
   }
 
   function toggleFaq(el) {
