@@ -548,12 +548,22 @@ function setData(key, val) { localStorage.setItem('miraesol_admin_' + key, JSON.
 // ── LOGIN ──
 const ADMIN_ID = 'admin';
 function doLogin() {
-  const id = document.getElementById('loginId').value;
+  const id = document.getElementById('loginId').value.trim();
   const pw = document.getElementById('loginPw').value;
-  const savedPw = getData('password') || DEFAULT_DATA.password;
+
+  // localStorage에서 비밀번호 직접 읽기
+  let savedPw;
+  try {
+    const raw = localStorage.getItem('miraesol_admin_password');
+    savedPw = raw ? JSON.parse(raw) : DEFAULT_DATA.password;
+  } catch(e) {
+    savedPw = DEFAULT_DATA.password;
+  }
+
   if (id === ADMIN_ID && pw === savedPw) {
     document.getElementById('loginWrap').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
+    document.getElementById('loginErr').style.display = 'none';
     initAll();
   } else {
     document.getElementById('loginErr').style.display = 'block';
