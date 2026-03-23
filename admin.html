@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 페이지 | 미래솔 안전교육</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0a1628;
+    --blue: #1a3a6e;
+    --accent: #f5a623;
+    --white: #ffffff;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-400: #94a3b8;
+    --gray-600: #475569;
+    --gray-800: #1e293b;
+    --red: #ef4444;
+    --green: #22c55e;
+    --sidebar-w: 240px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--gray-50); color: var(--gray-800); min-height: 100vh; }
+
+  /* ── LOGIN ── */
+  .login-wrap {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--navy), var(--blue));
+  }
+  .login-box {
+    background: var(--white); border-radius: 16px; padding: 2.5rem 2rem;
+    width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .login-logo {
+    font-size: 1.4rem; font-weight: 900; color: var(--navy); text-align: center;
+    margin-bottom: 0.3rem;
+  }
+  .login-logo span { color: var(--accent); }
+  .login-sub { text-align: center; font-size: 0.82rem; color: var(--gray-400); margin-bottom: 2rem; }
+  .login-label { font-size: 0.82rem; font-weight: 600; color: var(--gray-600); display: block; margin-bottom: 0.4rem; }
+  .login-input {
+    width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--gray-200);
+    border-radius: 8px; font-size: 0.9rem; font-family: inherit;
+    outline: none; transition: border-color 0.2s;
+    margin-bottom: 1rem;
+  }
+  .login-input:focus { border-color: var(--accent); }
+  .login-btn {
+    width: 100%; padding: 0.85rem; background: var(--navy); color: var(--white);
+    border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; transition: background 0.2s;
+  }
+  .login-btn:hover { background: var(--accent); color: var(--navy); }
+  .login-err { color: var(--red); font-size: 0.82rem; text-align: center; margin-top: 0.8rem; display: none; }
+
+  /* ── LAYOUT ── */
+  .app { display: none; min-height: 100vh; }
+  .sidebar {
+    position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100vh;
+    background: var(--navy); display: flex; flex-direction: column;
+    z-index: 100; overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 1.5rem 1.2rem 1rem;
+    font-size: 1.1rem; font-weight: 900; color: var(--white);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .sidebar-logo span { color: var(--accent); }
+  .sidebar-logo small { display: block; font-size: 0.72rem; font-weight: 400; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .nav-section { padding: 1rem 0.8rem 0.4rem; font-size: 0.68rem; color: rgba(255,255,255,0.35); letter-spacing: 1.5px; font-weight: 700; text-transform: uppercase; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0.65rem 1.2rem; cursor: pointer; border-radius: 0;
+    font-size: 0.88rem; color: rgba(255,255,255,0.6);
+    transition: all 0.15s; border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.9); }
+  .nav-item.active { background: rgba(245,166,35,0.1); color: var(--accent); border-left-color: var(--accent); }
+  .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+  .sidebar-footer {
+    margin-top: auto; padding: 1rem 1.2rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .logout-btn {
+    width: 100%; padding: 0.6rem; background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.5); border: none; border-radius: 6px;
+    font-size: 0.82rem; cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .logout-btn:hover { background: rgba(239,68,68,0.15); color: #f87171; }
+
+  /* ── MAIN ── */
+  .main { margin-left: var(--sidebar-w); padding: 2rem 2.5rem; min-height: 100vh; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.8rem; padding-bottom: 1.2rem;
+    border-bottom: 1.5px solid var(--gray-200);
+  }
+  .page-title { font-size: 1.3rem; font-weight: 800; color: var(--navy); }
+  .page-title small { display: block; font-size: 0.8rem; font-weight: 400; color: var(--gray-400); margin-top: 2px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--white); border-radius: 12px; padding: 1.6rem;
+    border: 1.5px solid var(--gray-200); margin-bottom: 1.2rem;
+  }
+  .card-title {
+    font-size: 0.88rem; font-weight: 700; color: var(--navy);
+    margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before { content: ''; width: 4px; height: 16px; background: var(--accent); border-radius: 2px; }
+
+  /* ── FORM ELEMENTS ── */
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--gray-600); margin-bottom: 0.4rem; }
+  .field input, .field textarea, .field select {
+    width: 100%; padding: 0.65rem 0.9rem;
+    border: 1.5px solid var(--gray-200); border-radius: 8px;
+    font-size: 0.88rem; font-family: inherit; color: var(--gray-800);
+    outline: none; transition: border-color 0.2s; background: var(--white);
+  }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+
+  /* ── BUTTONS ── */
+  .btn-save {
+    background: var(--navy); color: var(--white); border: none;
+    padding: 0.65rem 1.6rem; border-radius: 8px; font-size: 0.88rem;
+    font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-save:hover { background: var(--accent); color: var(--navy); }
+  .btn-reset {
+    background: transparent; color: var(--gray-400); border: 1.5px solid var(--gray-200);
+    padding: 0.65rem 1.2rem; border-radius: 8px; font-size: 0.88rem;
+    cursor: pointer; font-family: inherit; transition: all 0.2s;
+  }
+  .btn-reset:hover { border-color: var(--red); color: var(--red); }
+  .btn-add {
+    background: rgba(245,166,35,0.1); color: var(--accent); border: 1.5px dashed rgba(245,166,35,0.4);
+    padding: 0.55rem 1.2rem; border-radius: 8px; font-size: 0.85rem;
+    cursor: pointer; font-family: inherit; transition: all 0.2s; font-weight: 600;
+  }
+  .btn-add:hover { background: rgba(245,166,35,0.2); }
+  .btn-del {
+    background: rgba(239,68,68,0.1); color: var(--red); border: none;
+    padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem;
+    cursor: pointer; font-family: inherit; transition: all 0.2s;
+  }
+  .btn-del:hover { background: rgba(239,68,68,0.2); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
+    background: var(--navy); color: var(--white);
+    padding: 0.8rem 1.4rem; border-radius: 8px; font-size: 0.88rem;
+    display: none; align-items: center; gap: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    animation: slideUp 0.3s ease;
+  }
+  .toast.show { display: flex; }
+  @keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── SCHEDULE ITEMS ── */
+  .schedule-item {
+    background: var(--gray-50); border: 1.5px solid var(--gray-200);
+    border-radius: 10px; padding: 1.2rem; margin-bottom: 0.8rem;
+    position: relative;
+  }
+  .schedule-item .item-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.8rem;
+  }
+  .schedule-item .item-num {
+    font-size: 0.75rem; font-weight: 700; color: var(--accent);
+    background: rgba(245,166,35,0.1); padding: 2px 10px; border-radius: 20px;
+  }
+
+  /* ── STATUS BADGE ── */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+  }
+  .status-badge.open { background: rgba(34,197,94,0.12); color: #16a34a; }
+  .status-badge.soon { background: rgba(245,166,35,0.12); color: var(--accent); }
+  .status-badge.closed { background: rgba(148,163,184,0.15); color: var(--gray-400); }
+
+  /* ── DASHBOARD ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .stat-card {
+    background: var(--white); border: 1.5px solid var(--gray-200);
+    border-radius: 12px; padding: 1.2rem 1.4rem;
+  }
+  .stat-label { font-size: 0.78rem; color: var(--gray-400); font-weight: 500; margin-bottom: 0.4rem; }
+  .stat-val { font-size: 1.6rem; font-weight: 900; color: var(--navy); }
+  .stat-val span { font-size: 0.85rem; font-weight: 400; color: var(--gray-400); }
+  .stat-card.accent-card { background: var(--navy); border-color: var(--navy); }
+  .stat-card.accent-card .stat-label { color: rgba(255,255,255,0.5); }
+  .stat-card.accent-card .stat-val { color: var(--accent); }
+
+  /* ── FAQ ITEM ── */
+  .faq-item-admin {
+    background: var(--gray-50); border: 1.5px solid var(--gray-200);
+    border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 0.8rem;
+  }
+  .faq-item-admin .faq-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.6rem;
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <div class="login-logo">미래솔<span>SAFETY</span></div>
+    <p class="login-sub">관리자 페이지에 로그인하세요</p>
+    <label class="login-label">아이디</label>
+    <input type="text" class="login-input" id="loginId" placeholder="admin" autocomplete="username">
+    <label class="login-label">비밀번호</label>
+    <input type="password" class="login-input" id="loginPw" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <p class="login-err" id="loginErr">아이디 또는 비밀번호가 올바르지 않습니다.</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">미래솔<span>SAFETY</span><small>관리자 페이지</small></div>
+    <div class="nav-section">메뉴</div>
+    <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> 대시보드</div>
+    <div class="nav-item" onclick="showPage('notice')"><span class="icon">📢</span> 공지사항</div>
+    <div class="nav-item" onclick="showPage('schedule')"><span class="icon">📅</span> 교육 일정</div>
+    <div class="nav-item" onclick="showPage('fee')"><span class="icon">💳</span> 교육비·계좌</div>
+    <div class="nav-item" onclick="showPage('contact')"><span class="icon">📞</span> 연락처</div>
+    <div class="nav-item" onclick="showPage('faq')"><span class="icon">❓</span> 자주 묻는 질문</div>
+    <div class="nav-item" onclick="showPage('password')"><span class="icon">🔒</span> 비밀번호 변경</div>
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- 대시보드 -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title">대시보드<small>미래솔 안전교육 관리 현황</small></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card accent-card">
+          <div class="stat-label">총 교육 회차</div>
+          <div class="stat-val">4 <span>회</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">교육비</div>
+          <div class="stat-val" id="dash-fee">75,000<span>원</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">대표 연락처</div>
+          <div class="stat-val" style="font-size:1rem;" id="dash-phone">02-6952-2350</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">이메일</div>
+          <div class="stat-val" style="font-size:0.9rem;" id="dash-email">edu@miraesol.co.kr</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">수정 가능 항목 안내</div>
+        <table style="width:100%;border-collapse:collapse;font-size:0.87rem;">
+          <thead>
+            <tr style="background:var(--gray-50);">
+              <th style="padding:10px 12px;text-align:left;color:var(--gray-600);font-weight:600;border-bottom:1.5px solid var(--gray-200);">메뉴</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--gray-600);font-weight:600;border-bottom:1.5px solid var(--gray-200);">수정 가능 항목</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);">📢 공지사항</td><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-600);">상단 공지 배너 텍스트</td></tr>
+            <tr><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);">📅 교육 일정</td><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-600);">4개 회차 날짜·상태·차수명</td></tr>
+            <tr><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);">💳 교육비·계좌</td><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-600);">교육비 금액, 은행명, 계좌번호</td></tr>
+            <tr><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);">📞 연락처</td><td style="padding:10px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-600);">전화번호, 이메일, 운영시간</td></tr>
+            <tr><td style="padding:10px 12px;">❓ 자주 묻는 질문</td><td style="padding:10px 12px;color:var(--gray-600);">FAQ 질문·답변 추가·수정·삭제</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="background:rgba(245,166,35,0.05);border-color:rgba(245,166,35,0.3);">
+        <div class="card-title">💡 사용 안내</div>
+        <p style="font-size:0.85rem;color:var(--gray-600);line-height:1.8;">
+          각 메뉴에서 내용을 수정하고 <strong>저장</strong> 버튼을 누르면 홈페이지에 즉시 반영됩니다.<br>
+          저장된 데이터는 브라우저에 보관되므로, 홈페이지와 관리자 페이지를 <strong>같은 브라우저</strong>에서 사용하세요.
+        </p>
+      </div>
+    </div>
+
+    <!-- 공지사항 -->
+    <div class="page" id="page-notice">
+      <div class="page-header">
+        <div class="page-title">공지사항<small>상단 공지 배너 문구를 수정합니다</small></div>
+        <button class="btn-save" onclick="saveNotice()">💾 저장</button>
+      </div>
+      <div class="card">
+        <div class="card-title">공지 배너 텍스트</div>
+        <div class="field">
+          <label>공지 내용 (홈페이지 상단 노란 배너에 표시됩니다)</label>
+          <input type="text" id="noticeText" value="2026년 4월 정기과정 접수 중 — 잔여석 12석 | 조기 마감될 수 있습니다">
+        </div>
+        <div class="field">
+          <label>공지 표시 여부</label>
+          <select id="noticeVisible">
+            <option value="show">표시</option>
+            <option value="hide">숨김</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 교육 일정 -->
+    <div class="page" id="page-schedule">
+      <div class="page-header">
+        <div class="page-title">교육 일정<small>4개 회차의 날짜와 상태를 수정합니다</small></div>
+        <button class="btn-save" onclick="saveSchedule()">💾 저장</button>
+      </div>
+      <div id="scheduleList"></div>
+    </div>
+
+    <!-- 교육비·계좌 -->
+    <div class="page" id="page-fee">
+      <div class="page-header">
+        <div class="page-title">교육비 · 계좌<small>수강료와 납부 계좌 정보를 수정합니다</small></div>
+        <button class="btn-save" onclick="saveFee()">💾 저장</button>
+      </div>
+      <div class="card">
+        <div class="card-title">교육비 정보</div>
+        <div class="field-row">
+          <div class="field">
+            <label>수강료 (원)</label>
+            <input type="number" id="feeAmount" value="75000">
+          </div>
+          <div class="field">
+            <label>부가세 포함 여부</label>
+            <select id="feeTax">
+              <option value="포함">부가세 포함</option>
+              <option value="별도">부가세 별도</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">납부 계좌 정보</div>
+        <div class="field-row">
+          <div class="field">
+            <label>은행명</label>
+            <input type="text" id="bankName" value="국민은행">
+          </div>
+          <div class="field">
+            <label>계좌번호</label>
+            <input type="text" id="bankAccount" value="535501-04-179261">
+          </div>
+        </div>
+        <div class="field">
+          <label>예금주</label>
+          <input type="text" id="bankHolder" value="(주)미래솔">
+        </div>
+      </div>
+    </div>
+
+    <!-- 연락처 -->
+    <div class="page" id="page-contact">
+      <div class="page-header">
+        <div class="page-title">연락처<small>전화번호, 이메일, 운영시간을 수정합니다</small></div>
+        <button class="btn-save" onclick="saveContact()">💾 저장</button>
+      </div>
+      <div class="card">
+        <div class="card-title">기본 연락처</div>
+        <div class="field-row">
+          <div class="field">
+            <label>대표 전화번호</label>
+            <input type="text" id="phone" value="02-6952-2350">
+          </div>
+          <div class="field">
+            <label>이메일 주소</label>
+            <input type="email" id="email" value="edu@miraesol.co.kr">
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">운영 시간</div>
+        <div class="field-row-3">
+          <div class="field">
+            <label>평일 시작</label>
+            <input type="text" id="timeStart" value="09:00">
+          </div>
+          <div class="field">
+            <label>평일 종료</label>
+            <input type="text" id="timeEnd" value="17:00">
+          </div>
+          <div class="field">
+            <label>점심시간</label>
+            <input type="text" id="timeLunch" value="12:00~13:30">
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">교육 장소</div>
+        <div class="field">
+          <label>교육 장소 안내 문구</label>
+          <input type="text" id="location" value="PC, 모바일 등 통신이 가능한 곳 어디나 가능">
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="page" id="page-faq">
+      <div class="page-header">
+        <div class="page-title">자주 묻는 질문<small>FAQ 질문·답변을 추가·수정·삭제합니다</small></div>
+        <div style="display:flex;gap:0.8rem;">
+          <button class="btn-add" onclick="addFaq()">+ 질문 추가</button>
+          <button class="btn-save" onclick="saveFaq()">💾 저장</button>
+        </div>
+      </div>
+      <div id="faqList"></div>
+    </div>
+
+    <!-- 비밀번호 -->
+    <div class="page" id="page-password">
+      <div class="page-header">
+        <div class="page-title">비밀번호 변경<small>관리자 로그인 비밀번호를 변경합니다</small></div>
+      </div>
+      <div class="card" style="max-width:420px;">
+        <div class="card-title">비밀번호 변경</div>
+        <div class="field">
+          <label>현재 비밀번호</label>
+          <input type="password" id="pwCurrent">
+        </div>
+        <div class="field">
+          <label>새 비밀번호</label>
+          <input type="password" id="pwNew">
+        </div>
+        <div class="field">
+          <label>새 비밀번호 확인</label>
+          <input type="password" id="pwConfirm">
+        </div>
+        <button class="btn-save" onclick="changePassword()">비밀번호 변경</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 기본 데이터 ──
+const DEFAULT_DATA = {
+  notice: { text: '2026년 4월 정기과정 접수 중 — 잔여석 12석 | 조기 마감될 수 있습니다', visible: 'show' },
+  schedule: [
+    { round: '1차', month: 'MAR', date: '3월 15일(목)', status: 'closed', label: '교육 종료' },
+    { round: '2차', month: 'MAY', date: '5월 14일(목)', status: 'open',   label: '접수 진행중' },
+    { round: '3차', month: 'JUL', date: '7월 9일(목)',  status: 'soon',   label: '사전 접수 예정' },
+    { round: '4차', month: 'OCT', date: '10월 15일(목)',status: 'soon',   label: '사전 접수 예정' },
+  ],
+  fee: { amount: 75000, tax: '포함', bank: '국민은행', account: '535501-04-179261', holder: '(주)미래솔' },
+  contact: { phone: '02-6952-2350', email: 'edu@miraesol.co.kr', timeStart: '09:00', timeEnd: '17:00', timeLunch: '12:00~13:30', location: 'PC, 모바일 등 통신이 가능한 곳 어디나 가능' },
+  faq: [
+    { q: '교육을 이수하지 않으면 어떤 불이익이 있나요?', a: '산업안전보건법에 따라 관리감독자 교육 미이수 시 사업주에게 최대 500만원의 과태료가 부과됩니다.' },
+    { q: '교육비 환불은 어떻게 되나요?', a: '교육 시작 7일 전까지 취소 시 전액 환불이 가능합니다. 그 이후에는 환불이 제한될 수 있습니다.' },
+    { q: '기업 단체 교육(출강교육)도 가능한가요?', a: '네, 10인 이상 단체의 경우 기업 현장 또는 희망하는 장소로 출강교육을 운영합니다.' },
+    { q: '수료증은 어디서, 언제 받을 수 있나요?', a: '교육을 모두 이수(16시간 완료)하신 분께는 수료 후 수료증을 발급해 드립니다.' },
+    { q: '관리감독자 해당 여부를 어떻게 확인하나요?', a: '다른 근로자를 직접 지휘·감독하는 직위에 있는 분이라면 해당됩니다. 정확한 여부는 담당자에게 문의해 주세요.' },
+  ],
+  password: 'admin1234'
+};
+
+// ── STORAGE ──
+function getData(key) {
+  try { return JSON.parse(localStorage.getItem('miraesol_admin_' + key)) || DEFAULT_DATA[key]; }
+  catch(e) { return DEFAULT_DATA[key]; }
+}
+function setData(key, val) { localStorage.setItem('miraesol_admin_' + key, JSON.stringify(val)); }
+
+// ── LOGIN ──
+const ADMIN_ID = 'admin';
+function doLogin() {
+  const id = document.getElementById('loginId').value;
+  const pw = document.getElementById('loginPw').value;
+  const savedPw = getData('password') || DEFAULT_DATA.password;
+  if (id === ADMIN_ID && pw === savedPw) {
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    initAll();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+function doLogout() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPw').value = '';
+}
+
+// ── NAV ──
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg, ok=true) {
+  const t = document.getElementById('toast');
+  t.innerHTML = (ok ? '✅' : '❌') + ' ' + msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── INIT ALL ──
+function initAll() {
+  initNotice(); initSchedule(); initFee(); initContact(); initFaq(); updateDash();
+}
+
+// ── NOTICE ──
+function initNotice() {
+  const d = getData('notice');
+  document.getElementById('noticeText').value = d.text;
+  document.getElementById('noticeVisible').value = d.visible;
+}
+function saveNotice() {
+  const d = { text: document.getElementById('noticeText').value, visible: document.getElementById('noticeVisible').value };
+  setData('notice', d);
+  showToast('공지사항이 저장되었습니다.');
+}
+
+// ── SCHEDULE ──
+const STATUS_OPTIONS = [
+  { val: 'closed', label: '교육 종료' },
+  { val: 'open',   label: '접수 진행중' },
+  { val: 'soon',   label: '사전 접수 예정' },
+];
+function initSchedule() {
+  const list = getData('schedule');
+  const container = document.getElementById('scheduleList');
+  container.innerHTML = list.map((s, i) => `
+    <div class="schedule-item">
+      <div class="item-header">
+        <span class="item-num">${s.round} 정기과정</span>
+        <span class="status-badge ${s.status}">${s.label}</span>
+      </div>
+      <div class="field-row-3">
+        <div class="field"><label>회차명</label><input type="text" id="s_round_${i}" value="${s.round}"></div>
+        <div class="field"><label>월 표기 (영문)</label><input type="text" id="s_month_${i}" value="${s.month}"></div>
+        <div class="field"><label>날짜</label><input type="text" id="s_date_${i}" value="${s.date}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>상태</label>
+          <select id="s_status_${i}" onchange="updateSchedLabel(${i})">
+            ${STATUS_OPTIONS.map(o => `<option value="${o.val}" ${s.status===o.val?'selected':''}>${o.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>상태 표시 텍스트</label><input type="text" id="s_label_${i}" value="${s.label}"></div>
+      </div>
+    </div>
+  `).join('');
+}
+function updateSchedLabel(i) {
+  const sel = document.getElementById('s_status_' + i);
+  const opt = STATUS_OPTIONS.find(o => o.val === sel.value);
+  document.getElementById('s_label_' + i).value = opt ? opt.label : '';
+}
+function saveSchedule() {
+  const list = getData('schedule').map((s, i) => ({
+    round: document.getElementById('s_round_' + i).value,
+    month: document.getElementById('s_month_' + i).value,
+    date:  document.getElementById('s_date_' + i).value,
+    status:document.getElementById('s_status_' + i).value,
+    label: document.getElementById('s_label_' + i).value,
+  }));
+  setData('schedule', list);
+  initSchedule();
+  showToast('교육 일정이 저장되었습니다.');
+}
+
+// ── FEE ──
+function initFee() {
+  const d = getData('fee');
+  document.getElementById('feeAmount').value  = d.amount;
+  document.getElementById('feeTax').value     = d.tax;
+  document.getElementById('bankName').value   = d.bank;
+  document.getElementById('bankAccount').value= d.account;
+  document.getElementById('bankHolder').value = d.holder;
+}
+function saveFee() {
+  const d = {
+    amount:  parseInt(document.getElementById('feeAmount').value),
+    tax:     document.getElementById('feeTax').value,
+    bank:    document.getElementById('bankName').value,
+    account: document.getElementById('bankAccount').value,
+    holder:  document.getElementById('bankHolder').value,
+  };
+  setData('fee', d);
+  updateDash();
+  showToast('교육비·계좌 정보가 저장되었습니다.');
+}
+
+// ── CONTACT ──
+function initContact() {
+  const d = getData('contact');
+  document.getElementById('phone').value      = d.phone;
+  document.getElementById('email').value      = d.email;
+  document.getElementById('timeStart').value  = d.timeStart;
+  document.getElementById('timeEnd').value    = d.timeEnd;
+  document.getElementById('timeLunch').value  = d.timeLunch;
+  document.getElementById('location').value   = d.location;
+}
+function saveContact() {
+  const d = {
+    phone:     document.getElementById('phone').value,
+    email:     document.getElementById('email').value,
+    timeStart: document.getElementById('timeStart').value,
+    timeEnd:   document.getElementById('timeEnd').value,
+    timeLunch: document.getElementById('timeLunch').value,
+    location:  document.getElementById('location').value,
+  };
+  setData('contact', d);
+  updateDash();
+  showToast('연락처가 저장되었습니다.');
+}
+
+// ── FAQ ──
+function initFaq() {
+  const list = getData('faq');
+  renderFaq(list);
+}
+function renderFaq(list) {
+  document.getElementById('faqList').innerHTML = list.map((f, i) => `
+    <div class="faq-item-admin" id="faq_${i}">
+      <div class="faq-head">
+        <span style="font-size:0.78rem;color:var(--accent);font-weight:700;">Q${i+1}</span>
+        <button class="btn-del" onclick="deleteFaq(${i})">삭제</button>
+      </div>
+      <div class="field"><label>질문</label><input type="text" id="fq_q_${i}" value="${escHtml(f.q)}"></div>
+      <div class="field"><label>답변</label><textarea id="fq_a_${i}">${escHtml(f.a)}</textarea></div>
+    </div>
+  `).join('');
+}
+function addFaq() {
+  const list = collectFaq();
+  list.push({ q: '새 질문을 입력하세요.', a: '답변을 입력하세요.' });
+  renderFaq(list);
+}
+function deleteFaq(i) {
+  const list = collectFaq();
+  list.splice(i, 1);
+  renderFaq(list);
+}
+function collectFaq() {
+  const count = document.querySelectorAll('[id^="fq_q_"]').length;
+  const list = [];
+  for (let i = 0; i < count; i++) {
+    const q = document.getElementById('fq_q_' + i);
+    const a = document.getElementById('fq_a_' + i);
+    if (q && a) list.push({ q: q.value, a: a.value });
+  }
+  return list;
+}
+function saveFaq() {
+  const list = collectFaq();
+  setData('faq', list);
+  showToast('FAQ가 저장되었습니다.');
+}
+
+// ── PASSWORD ──
+function changePassword() {
+  const cur   = document.getElementById('pwCurrent').value;
+  const nw    = document.getElementById('pwNew').value;
+  const conf  = document.getElementById('pwConfirm').value;
+  const saved = getData('password') || DEFAULT_DATA.password;
+  if (cur !== saved)        return showToast('현재 비밀번호가 틀렸습니다.', false);
+  if (nw.length < 6)        return showToast('새 비밀번호는 6자 이상이어야 합니다.', false);
+  if (nw !== conf)          return showToast('새 비밀번호가 일치하지 않습니다.', false);
+  setData('password', nw);
+  document.getElementById('pwCurrent').value = '';
+  document.getElementById('pwNew').value = '';
+  document.getElementById('pwConfirm').value = '';
+  showToast('비밀번호가 변경되었습니다.');
+}
+
+// ── DASHBOARD ──
+function updateDash() {
+  const fee = getData('fee');
+  const con = getData('contact');
+  const el = document.getElementById('dash-fee');
+  if (el) el.innerHTML = Number(fee.amount).toLocaleString() + '<span>원</span>';
+  const ep = document.getElementById('dash-phone');
+  if (ep) ep.textContent = con.phone;
+  const ee = document.getElementById('dash-email');
+  if (ee) ee.textContent = con.email;
+}
+
+// ── UTIL ──
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Enter key login
+document.getElementById('loginId').addEventListener('keydown', function(e) { if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>
