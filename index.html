@@ -1300,16 +1300,19 @@
 <footer>
   <div class="footer-top">
     <div>
-      <div class="footer-logo">미래솔<span> SAFETY EDU</span></div>
-      <p style="color:rgba(255,255,255,0.4); font-size:0.8rem; margin-top:0.5rem;">고용노동부 인정 안전보건교육기관</p>
+      <div class="footer-logo" id="hp-footer-logo-wrap">
+        <img id="hp-footer-logo-img" src="" alt="미래솔 SAFETY EDU" style="display:none; max-height:48px; max-width:200px;">
+        <span id="hp-footer-logo-text">미래솔<span> SAFETY EDU</span></span>
+      </div>
+      <p id="hp-footer-desc" style="color:rgba(255,255,255,0.4); font-size:0.8rem; margin-top:0.5rem;">고용노동부 인정 안전보건교육기관</p>
     </div>
     <div class="footer-contact">
       <p><strong>대표번호</strong> <span id="hp-footer-phone">02-6952-2350</span></p>
-      <p><strong>이메일</strong> <span id="hp-footer-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="71141504311c18031014021e1d5f121e5f1a03">[email&#160;protected]</a></span></p>
+      <p><strong>이메일</strong> <span id="hp-footer-email">edu@miraesol.kr</span></p>
       <p><strong>운영시간</strong> <span id="hp-footer-hours">평일 09:00 ~ 17:00 (점심 12:00~13:30)</span></p>
     </div>
   </div>
-  <div class="footer-bottom">
+  <div class="footer-bottom" id="hp-footer-bottom">
     © 2026 (주)미래솔. All rights reserved. | 사업자등록번호: 000-00-00000 | 대표: 홍길동
   </div>
 </footer>
@@ -1411,6 +1414,26 @@
     if (fe) fe.textContent = con.email;
     var fh = document.getElementById('hp-footer-hours');
     if (fh) fh.textContent = '평일 ' + con.timeStart + ' ~ ' + con.timeEnd + ' (점심 ' + con.timeLunch + ')';
+  }
+
+  // 6. 하단 푸터
+  var footer = getData('footer', null);
+  if (footer) {
+    var fdesc = document.getElementById('hp-footer-desc');
+    if (fdesc) fdesc.textContent = footer.desc;
+
+    var fbottom = document.getElementById('hp-footer-bottom');
+    if (fbottom) fbottom.textContent = footer.bottom;
+
+    var fimg = document.getElementById('hp-footer-logo-img');
+    var ftxt = document.getElementById('hp-footer-logo-text');
+    if (footer.logoImg) {
+      if (fimg) { fimg.src = footer.logoImg; fimg.style.display = 'block'; }
+      if (ftxt) ftxt.style.display = 'none';
+    } else {
+      if (fimg) fimg.style.display = 'none';
+      if (ftxt) ftxt.style.display = '';
+    }
   }
 
   // 5. FAQ
