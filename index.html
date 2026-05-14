@@ -1980,10 +1980,27 @@ function setLang(lang) {
       t.industry_opts.map(function(o){ return '<option>'+o+'</option>'; }).join('');
     inSel.value = prev;
   }
+
+  // 희망 교육 일정 — localStorage 기준으로 종료된 회차 제외
   var scSel = document.getElementById('form-schedule');
   if(scSel) {
-    scSel.innerHTML = '<option value="">' + t.schedule_placeholder + '</option>' +
-      t.schedule_opts.map(function(o){ return '<option>'+o+'</option>'; }).join('');
+    var savedSched;
+    try { savedSched = JSON.parse(localStorage.getItem('miraesol_admin_schedule')); } catch(e) { savedSched = null; }
+
+    if(savedSched) {
+      var activeSched = savedSched.filter(function(s){ return s.status !== 'closed'; });
+      scSel.innerHTML = '<option value="">' + t.schedule_placeholder + '</option>' +
+        activeSched.map(function(s){
+          var label = lang === 'en'
+            ? s.date + ' - Session ' + s.round.replace('차','')
+            : s.date + ' - ' + s.round;
+          return '<option value="' + s.date + '">' + label + '</option>';
+        }).join('');
+    } else {
+      // localStorage에 데이터 없으면 기본 목록 사용
+      scSel.innerHTML = '<option value="">' + t.schedule_placeholder + '</option>' +
+        t.schedule_opts.map(function(o){ return '<option>'+o+'</option>'; }).join('');
+    }
   }
 
   // 교육일정 날짜·차수 동적 처리
@@ -2063,8 +2080,20 @@ function setLang(lang) {
     var t=TRANS['ko'];
     var inSel=document.getElementById('form-industry');
     if(inSel) inSel.innerHTML='<option value="">'+t.industry_placeholder+'</option>'+t.industry_opts.map(function(o){return '<option>'+o+'</option>';}).join('');
+
+    // 희망 교육 일정 — 종료된 회차 제외
     var scSel=document.getElementById('form-schedule');
-    if(scSel) scSel.innerHTML='<option value="">'+t.schedule_placeholder+'</option>'+t.schedule_opts.map(function(o){return '<option>'+o+'</option>';}).join('');
+    if(scSel) {
+      var savedSched2;
+      try { savedSched2 = JSON.parse(localStorage.getItem('miraesol_admin_schedule')); } catch(e) { savedSched2 = null; }
+      if(savedSched2) {
+        var active2 = savedSched2.filter(function(s){ return s.status !== 'closed'; });
+        scSel.innerHTML='<option value="">'+t.schedule_placeholder+'</option>'+
+          active2.map(function(s){ return '<option value="'+s.date+'">'+s.date+' - '+s.round+'</option>'; }).join('');
+      } else {
+        scSel.innerHTML='<option value="">'+t.schedule_placeholder+'</option>'+t.schedule_opts.map(function(o){return '<option>'+o+'</option>';}).join('');
+      }
+    }
     // Init FAQ text for ko
     document.querySelectorAll('[data-faq-key]').forEach(function(el){
       var k=el.getAttribute('data-faq-key');
