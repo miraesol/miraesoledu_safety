@@ -330,8 +330,11 @@
     <!-- 교육 일정 -->
     <div class="page" id="page-schedule">
       <div class="page-header">
-        <div class="page-title">교육 일정<small>4개 회차의 날짜와 상태를 수정합니다</small></div>
-        <button class="btn-save" onclick="saveSchedule()">💾 저장</button>
+        <div class="page-title">교육 일정<small>회차별 날짜와 상태를 수정합니다</small></div>
+        <div style="display:flex;gap:0.6rem;">
+          <button class="btn-add" onclick="addSchedule()" style="padding:0.65rem 1.4rem;">+ 일정 추가</button>
+          <button class="btn-save" onclick="saveSchedule()">💾 저장</button>
+        </div>
       </div>
       <div id="scheduleList"></div>
     </div>
@@ -640,19 +643,39 @@ const STATUS_OPTIONS = [
   { val: 'open',   label: '접수 진행중' },
   { val: 'soon',   label: '사전 접수 예정' },
 ];
-function initSchedule() {
-  const list = getData('schedule');
+
+// 현재 화면에서 목록 수집
+function collectSchedule() {
+  const count = document.querySelectorAll('[id^="s_round_"]').length;
+  const list = [];
+  for (let i = 0; i < count; i++) {
+    const r = document.getElementById('s_round_' + i);
+    if (r) list.push({
+      round:  r.value,
+      month:  document.getElementById('s_month_' + i).value,
+      date:   document.getElementById('s_date_' + i).value,
+      status: document.getElementById('s_status_' + i).value,
+      label:  document.getElementById('s_label_' + i).value,
+    });
+  }
+  return list;
+}
+
+function renderSchedule(list) {
   const container = document.getElementById('scheduleList');
   container.innerHTML = list.map((s, i) => `
-    <div class="schedule-item">
+    <div class="schedule-item" id="sched-item-${i}">
       <div class="item-header">
         <span class="item-num">${s.round} 정기과정</span>
-        <span class="status-badge ${s.status}">${s.label}</span>
+        <div style="display:flex;align-items:center;gap:0.6rem;">
+          <span class="status-badge ${s.status}">${s.label}</span>
+          ${list.length > 1 ? `<button class="btn-del" onclick="deleteSchedule(${i})">삭제</button>` : ''}
+        </div>
       </div>
       <div class="field-row-3">
-        <div class="field"><label>회차명</label><input type="text" id="s_round_${i}" value="${s.round}"></div>
-        <div class="field"><label>월 표기 (영문)</label><input type="text" id="s_month_${i}" value="${s.month}"></div>
-        <div class="field"><label>날짜</label><input type="text" id="s_date_${i}" value="${s.date}"></div>
+        <div class="field"><label>회차명</label><input type="text" id="s_round_${i}" value="${s.round}" oninput="refreshItemHeader(${i})"></div>
+        <div class="field"><label>월 표기 (영문, 예: MAY)</label><input type="text" id="s_month_${i}" value="${s.month}" style="text-transform:uppercase;"></div>
+        <div class="field"><label>날짜 (예: 5월 14일(목))</label><input type="text" id="s_date_${i}" value="${s.date}"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>상태</label>
@@ -665,21 +688,60 @@ function initSchedule() {
     </div>
   `).join('');
 }
+
+function initSchedule() {
+  const list = getData('schedule');
+  renderSchedule(list);
+}
+
+function refreshItemHeader(i) {
+  const roundVal = document.getElementById('s_round_' + i).value;
+  const badge = document.querySelector('#sched-item-' + i + ' .item-num');
+  if (badge) badge.textContent = roundVal + ' 정기과정';
+}
+
 function updateSchedLabel(i) {
   const sel = document.getElementById('s_status_' + i);
   const opt = STATUS_OPTIONS.find(o => o.val === sel.value);
   document.getElementById('s_label_' + i).value = opt ? opt.label : '';
 }
+
+function addSchedule() {
+  const list = collectSchedule();
+  // 다음 차수 자동 계산
+  const nextNum = list.length + 1;
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  list.push({
+    round:  nextNum + '차',
+    month:  months[new Date().getMonth()],
+    date:   '',
+    status: 'soon',
+    label:  '사전 접수 예정',
+  });
+  renderSchedule(list);
+  // 새로 추가된 항목으로 스크롤
+  const newItem = document.getElementById('sched-item-' + (list.length - 1));
+  if (newItem) newItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast('✅ ' + nextNum + '차 일정이 추가되었습니다. 내용을 입력 후 저장하세요.', true);
+}
+
+function deleteSchedule(idx) {
+  if (!confirm('이 회차를 삭제할까요?')) return;
+  const list = collectSchedule();
+  list.splice(idx, 1);
+  // 차수 번호 재정렬
+  list.forEach((s, i) => { s.round = (i + 1) + '차'; });
+  renderSchedule(list);
+}
+
 function saveSchedule() {
-  const list = getData('schedule').map((s, i) => ({
-    round: document.getElementById('s_round_' + i).value,
-    month: document.getElementById('s_month_' + i).value,
-    date:  document.getElementById('s_date_' + i).value,
-    status:document.getElementById('s_status_' + i).value,
-    label: document.getElementById('s_label_' + i).value,
-  }));
+  const list = collectSchedule();
+  if (list.some(s => !s.date.trim())) {
+    showToast('날짜가 비어 있는 회차가 있습니다.', false);
+    return;
+  }
   setData('schedule', list);
-  initSchedule();
+  renderSchedule(list);
   showToast('교육 일정이 저장되었습니다.');
 }
 

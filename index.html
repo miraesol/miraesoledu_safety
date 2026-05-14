@@ -1390,6 +1390,12 @@
           return '<option value="' + s.date + '">' + label + '</option>';
         }).join('');
     }
+
+    // 카드 수에 따라 grid 칼럼 자동 조정 (최대 4칸)
+    if (container) {
+      var cols = Math.min(schedule.length, 4);
+      container.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+    }
   }
 
   // 3. 교육비·계좌
