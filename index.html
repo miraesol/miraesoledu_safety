@@ -1362,12 +1362,8 @@
       container.innerHTML = schedule.map(function(s) {
         var isClosed = s.status === 'closed';
         var isFeatured = s.status === 'open';
-        var badgeStyle = isClosed
-          ? 'background:var(--gray-400);color:var(--white);'
-          : '';
-        var cardStyle = isClosed
-          ? 'opacity:0.6;filter:grayscale(30%);'
-          : '';
+        var badgeStyle = isClosed ? 'background:var(--gray-400);color:var(--white);' : '';
+        var cardStyle = isClosed ? 'opacity:0.6;filter:grayscale(30%);' : '';
         var monthStyle = isClosed ? 'color:var(--gray-400);' : '';
         return '<div class="sched-card' + (isFeatured ? ' featured' : '') + '" style="' + cardStyle + '">'
           + (isClosed || isFeatured ? '<span class="sched-badge" style="' + badgeStyle + '">' + (isClosed ? '교육 종료' : '접수중') + '</span>' : '')
@@ -1378,6 +1374,21 @@
           + '<div class="sched-status ' + s.status + '">' + s.label + '</div>'
           + '</div>';
       }).join('');
+    }
+
+    // 희망 교육 일정 드롭다운 — 종료된 회차 제외
+    var activeSched = schedule.filter(function(s){ return s.status !== 'closed'; });
+    var scSel = document.getElementById('form-schedule');
+    if (scSel) {
+      var lang = localStorage.getItem('miraesol_lang') || 'ko';
+      var placeholder = lang === 'en' ? 'Select preferred date' : '일정 선택';
+      scSel.innerHTML = '<option value="">' + placeholder + '</option>' +
+        activeSched.map(function(s) {
+          var label = lang === 'en'
+            ? s.date + ' - Session ' + s.round.replace('차', '')
+            : s.date + ' - ' + s.round;
+          return '<option value="' + s.date + '">' + label + '</option>';
+        }).join('');
     }
   }
 
