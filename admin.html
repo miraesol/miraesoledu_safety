@@ -603,70 +603,6 @@ function setData(key, val) {
 }
 
 // Firebase 실시간 수신 → 로컬 캐시 갱신 후 화면 갱신
-function fetchFromFirebase(retryCount) {
-  retryCount = retryCount || 0;
-  var statusEl = document.getElementById('firebase-status');
-
-  fetch('https://miraesol-safety-default-rtdb.firebaseio.com/miraesol.json', {cache: 'no-store'})
-  .then(function(res) {
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return res.json();
-  })
-  .then(function(firebaseData) {
-    if (!firebaseData) {
-      var uploadData = {};
-      ['notice','schedule','fee','contact','faq','footer','company'].forEach(function(key) {
-        uploadData[key] = DEFAULT_DATA[key];
-        try { var old = localStorage.getItem('miraesol_admin_' + key); if (old) uploadData[key] = JSON.parse(old); } catch(e) {}
-      });
-      return fetch('https://miraesol-safety-default-rtdb.firebaseio.com/miraesol.json', {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(uploadData)
-      }).then(function() { return uploadData; });
-    }
-    return firebaseData;
-  })
-  .then(function(data) {
-    if (!data) return;
-    Object.keys(data).forEach(function(key) {
-      localStorage.setItem('miraesol_cache_' + key, JSON.stringify(data[key]));
-    });
-    if (statusEl) { statusEl.innerHTML = '🟢 Firebase 연결됨'; statusEl.style.color = '#4ade80'; }
-    var activePage = document.querySelector('.page.active');
-    if (activePage) {
-      var pid = activePage.id.replace('page-', '');
-      if (pid === 'schedule') initSchedule();
-      else if (pid === 'notice') initNotice();
-      else if (pid === 'fee') initFee();
-      else if (pid === 'contact') initContact();
-      else if (pid === 'faq') initFaq();
-      else if (pid === 'footer') initFooter();
-      else if (pid === 'company') initCompany();
-    }
-    updateDash();
-  })
-  .catch(function(e) {
-    console.warn('Firebase 오류 (시도 ' + (retryCount+1) + '):', e.message);
-    if (retryCount < 4) {
-      // 재시도: 2초, 4초, 8초, 16초 간격
-      var delay = Math.pow(2, retryCount) * 2000;
-      if (statusEl) { statusEl.innerHTML = '🟡 재연결 중... (' + (retryCount+1) + '/5)'; statusEl.style.color = '#fbbf24'; }
-      setTimeout(function() { fetchFromFirebase(retryCount + 1); }, delay);
-    } else {
-      if (statusEl) { statusEl.innerHTML = '🔴 연결 실패 <button onclick="fetchFromFirebase(0)" style="margin-left:6px;padding:2px 8px;background:var(--accent);color:var(--navy);border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">재시도</button>'; statusEl.style.color = '#f87171'; }
-    }
-  });
-}
-
-function listenFirebase() {
-  var statusEl = document.getElementById('firebase-status');
-  if (statusEl) { statusEl.innerHTML = '🟡 Firebase 연결 중...'; statusEl.style.color = '#fbbf24'; }
-  fetchFromFirebase(0);
-  // 30초마다 자동 갱신
-  setInterval(function() { fetchFromFirebase(0); }, 30000);
-}
-
 // ── LOGIN ──
 const ADMIN_ID = 'admin';
 function doLogin() {
@@ -718,8 +654,14 @@ function showToast(msg, ok=true) {
 
 // ── INIT ALL ──
 function initAll() {
-  initNotice(); initSchedule(); initFee(); initContact(); initFaq(); initFooter(); initCompany(); updateDash();
-  listenFirebase(); // Firebase 실시간 수신 시작
+  try { initNotice(); } catch(e) { console.error('initNotice 오류:', e); }
+  try { initSchedule(); } catch(e) { console.error('initSchedule 오류:', e); }
+  try { initFee(); } catch(e) { console.error('initFee 오류:', e); }
+  try { initContact(); } catch(e) { console.error('initContact 오류:', e); }
+  try { initFaq(); } catch(e) { console.error('initFaq 오류:', e); }
+  try { initFooter(); } catch(e) { console.error('initFooter 오류:', e); }
+  try { initCompany(); } catch(e) { console.error('initCompany 오류:', e); }
+  try { updateDash(); } catch(e) { console.error('updateDash 오류:', e); }
 }
 
 // ── NOTICE ──
@@ -1047,6 +989,77 @@ function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
 
 // Enter key login
 document.getElementById('loginId').addEventListener('keydown', function(e) { if(e.key==='Enter') doLogin(); });
+
+// ── 페이지 로드 즉시 Firebase 연결 시작 (로그인 전) ──
+(function() {
+  var statusEl = document.getElementById('firebase-status');
+  if (statusEl) { statusEl.innerHTML = '🟡 Firebase 연결 중...'; statusEl.style.color = '#fbbf24'; }
+
+  function applyFirebaseToUI(data) {
+    if (!data) return;
+    // 캐시 업데이트
+    Object.keys(data).forEach(function(key) {
+      localStorage.setItem('miraesol_cache_' + key, JSON.stringify(data[key]));
+    });
+    if (statusEl) { statusEl.innerHTML = '🟢 Firebase 연결됨'; statusEl.style.color = '#4ade80'; }
+    // 현재 열린 페이지 갱신 (로그인 후)
+    var activePage = document.querySelector('.page.active');
+    if (activePage) {
+      var pid = activePage.id.replace('page-', '');
+      if (pid === 'schedule') initSchedule();
+      else if (pid === 'notice') initNotice();
+      else if (pid === 'fee') initFee();
+      else if (pid === 'contact') initContact();
+      else if (pid === 'faq') initFaq();
+      else if (pid === 'footer') initFooter();
+      else if (pid === 'company') initCompany();
+      else updateDash();
+    }
+  }
+
+  function doFetch(retry) {
+    retry = retry || 0;
+    fetch('https://miraesol-safety-default-rtdb.firebaseio.com/miraesol.json', { cache: 'no-store' })
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        if (!data) {
+          // Firebase 비어있으면 기본 데이터 올리기
+          var upload = {};
+          ['notice','schedule','fee','contact','faq','footer','company'].forEach(function(k) {
+            upload[k] = DEFAULT_DATA[k];
+            try { var old = localStorage.getItem('miraesol_admin_' + k); if (old) upload[k] = JSON.parse(old); } catch(e) {}
+          });
+          return fetch('https://miraesol-safety-default-rtdb.firebaseio.com/miraesol.json', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(upload)
+          }).then(function() { return upload; });
+        }
+        return data;
+      })
+      .then(function(data) { applyFirebaseToUI(data); })
+      .catch(function(e) {
+        console.warn('Firebase fetch 실패 (' + (retry+1) + '회):', e.message);
+        if (statusEl) { statusEl.innerHTML = '🟡 재연결 중... (' + (retry+1) + '/5)'; statusEl.style.color = '#fbbf24'; }
+        if (retry < 4) {
+          setTimeout(function() { doFetch(retry + 1); }, (retry + 1) * 2000);
+        } else {
+          if (statusEl) {
+            statusEl.innerHTML = '🔴 연결 실패 <button onclick="location.reload()" style="margin-left:6px;padding:2px 8px;background:var(--accent);color:var(--navy);border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">새로고침</button>';
+            statusEl.style.color = '#f87171';
+          }
+        }
+      });
+  }
+
+  // 즉시 실행
+  doFetch(0);
+  // 30초마다 자동 갱신
+  setInterval(function() { doFetch(0); }, 30000);
+})();
 </script>
 </body>
 </html>
