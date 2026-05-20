@@ -247,6 +247,7 @@
     <div class="nav-item" onclick="showPage('footer')"><span class="icon">🏢</span> 하단 정보 관리</div>
     <div class="nav-item" onclick="showPage('password')"><span class="icon">🔒</span> 비밀번호 변경</div>
     <div class="sidebar-footer">
+      <div id="firebase-status" style="font-size:0.75rem;color:#fbbf24;margin-bottom:0.6rem;padding:0 0.2rem;">🟡 Firebase 연결 중...</div>
       <button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button>
     </div>
   </aside>
@@ -595,18 +596,55 @@ function getData(key) {
 }
 function setData(key, val) {
   // Firebase에 저장
-  db.ref('miraesol/' + key).set(val).catch(function(e){ console.error('Firebase 저장 오류:', e); });
-  // 로컬 캐시도 업데이트 (즉시 반영용)
+  db.ref('miraesol/' + key).set(val)
+    .then(function() {
+      console.log('Firebase 저장 성공:', key);
+    })
+    .catch(function(e) {
+      console.error('Firebase 저장 오류:', e);
+      showToast('❌ Firebase 저장 실패: ' + e.message, false);
+    });
+  // 로컬 캐시도 업데이트
   localStorage.setItem('miraesol_cache_' + key, JSON.stringify(val));
 }
 
 // Firebase 실시간 수신 → 로컬 캐시 갱신 후 화면 갱신
 function listenFirebase() {
+  // 연결 상태 표시
+  var statusEl = document.getElementById('firebase-status');
+
   db.ref('miraesol').on('value', function(snap) {
-    var data = snap.val() || {};
-    Object.keys(data).forEach(function(key) {
-      localStorage.setItem('miraesol_cache_' + key, JSON.stringify(data[key]));
+    var firebaseData = snap.val();
+
+    if (!firebaseData) {
+      // Firebase가 비어있으면 현재 데이터를 Firebase에 업로드
+      console.log('Firebase 비어있음 → 현재 데이터 업로드 중...');
+      var uploadData = {};
+      ['notice','schedule','fee','contact','faq','footer','company'].forEach(function(key) {
+        uploadData[key] = DEFAULT_DATA[key];
+        // 혹시 이전 버전 localStorage 데이터가 있으면 사용
+        try {
+          var old = localStorage.getItem('miraesol_admin_' + key);
+          if (old) uploadData[key] = JSON.parse(old);
+        } catch(e) {}
+      });
+      db.ref('miraesol').set(uploadData)
+        .then(function(){ console.log('Firebase 초기 데이터 업로드 완료'); })
+        .catch(function(e){ console.error('Firebase 업로드 실패:', e); });
+      return;
+    }
+
+    // Firebase 데이터를 로컬 캐시에 저장
+    Object.keys(firebaseData).forEach(function(key) {
+      localStorage.setItem('miraesol_cache_' + key, JSON.stringify(firebaseData[key]));
     });
+
+    // 연결 상태 업데이트
+    if (statusEl) {
+      statusEl.innerHTML = '🟢 Firebase 연결됨';
+      statusEl.style.color = '#4ade80';
+    }
+
     // 현재 열린 페이지 자동 갱신
     var activePage = document.querySelector('.page.active');
     if (activePage) {
@@ -617,8 +655,29 @@ function listenFirebase() {
       else if (pid === 'contact') initContact();
       else if (pid === 'faq') initFaq();
       else if (pid === 'footer') initFooter();
+      else if (pid === 'company') initCompany();
     }
     updateDash();
+
+  }, function(err) {
+    console.error('Firebase 오류:', err);
+    if (statusEl) {
+      statusEl.innerHTML = '🔴 Firebase 연결 실패: ' + err.message;
+      statusEl.style.color = '#f87171';
+    }
+  });
+
+  // 연결 확인
+  db.ref('.info/connected').on('value', function(snap) {
+    if (statusEl) {
+      if (snap.val() === true) {
+        statusEl.innerHTML = '🟢 Firebase 연결됨';
+        statusEl.style.color = '#4ade80';
+      } else {
+        statusEl.innerHTML = '🟡 Firebase 연결 중...';
+        statusEl.style.color = '#fbbf24';
+      }
+    }
   });
 }
 
