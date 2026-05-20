@@ -1335,16 +1335,45 @@
   })();
 </script>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script>
-// ── 관리자 데이터 연동 ──
+// ══════════════════════════════════════════
+// ▼▼▼ Firebase 설정값을 여기에 입력 ▼▼▼
+// ══════════════════════════════════════════
+var HP_FIREBASE_CONFIG = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  databaseURL:       "YOUR_DATABASE_URL",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+// ══════════════════════════════════════════
+
+// ── 관리자 데이터 연동 (Firebase 실시간) ──
 (function() {
-  function getData(key, fallback) {
-    try { var v = localStorage.getItem('miraesol_admin_' + key); return v ? JSON.parse(v) : fallback; }
-    catch(e) { return fallback; }
+  var hpApp;
+  try { hpApp = firebase.app('hp'); } catch(e) {
+    hpApp = firebase.initializeApp(HP_FIREBASE_CONFIG, 'hp');
   }
+  var hpDb = firebase.database(hpApp);
+
+  function applyAllData(data) {
+    if (!data) return;
+    var notice   = data.notice   || null;
+    var schedule = data.schedule ? Object.values(data.schedule) : null;
+    var fee      = data.fee      || null;
+    var con      = data.contact  || null;
+    var footer   = data.footer   || null;
+    var company  = data.company  || null;
+    var faq      = data.faq ? Object.values(data.faq) : null;
 
   // 1. 공지사항
-  var notice = getData('notice', null);
+  var notice = notice;
   if (notice) {
     var strip = document.getElementById('hp-notice-strip');
     var noticeText = document.getElementById('hp-notice-text');
@@ -1465,11 +1494,10 @@
   }
 
   // 5. FAQ
-  var faq = getData('faq', null);
   if (faq) {
     var faqList = document.getElementById('hp-faq-list');
     if (faqList) {
-      faqList.innerHTML = faq.map(function(f, i) {
+      faqList.innerHTML = faq.map(function(f) {
         return '<div class="faq-item">'
           + '<div class="faq-q" onclick="toggleFaq(this)">' + f.q + '<span class="faq-icon">+</span></div>'
           + '<div class="faq-a">' + f.a + '</div>'
@@ -1477,6 +1505,23 @@
       }).join('');
     }
   }
+  } // end applyAllData
+
+  // Firebase 실시간 수신
+  hpDb.ref('miraesol').on('value', function(snap) {
+    applyAllData(snap.val());
+  }, function(err) {
+    console.warn('Firebase 연결 실패, 로컬 캐시 사용:', err.message);
+    // fallback: 로컬 캐시
+    var cached = {};
+    ['notice','schedule','fee','contact','footer','company','faq'].forEach(function(k) {
+      try {
+        var v = localStorage.getItem('miraesol_cache_' + k);
+        if (v) cached[k] = JSON.parse(v);
+      } catch(e) {}
+    });
+    applyAllData(cached);
+  });
 })();
 </script>
 
@@ -1991,7 +2036,7 @@ function setLang(lang) {
   var scSel = document.getElementById('form-schedule');
   if(scSel) {
     var savedSched;
-    try { savedSched = JSON.parse(localStorage.getItem('miraesol_admin_schedule')); } catch(e) { savedSched = null; }
+    try { savedSched = JSON.parse(localStorage.getItem('miraesol_cache_schedule')); } catch(e) { savedSched = null; }
 
     if(savedSched) {
       var activeSched = savedSched.filter(function(s){ return s.status !== 'closed'; });
@@ -2091,7 +2136,7 @@ function setLang(lang) {
     var scSel=document.getElementById('form-schedule');
     if(scSel) {
       var savedSched2;
-      try { savedSched2 = JSON.parse(localStorage.getItem('miraesol_admin_schedule')); } catch(e) { savedSched2 = null; }
+      try { savedSched2 = JSON.parse(localStorage.getItem('miraesol_cache_schedule')); } catch(e) { savedSched2 = null; }
       if(savedSched2) {
         var active2 = savedSched2.filter(function(s){ return s.status !== 'closed'; });
         scSel.innerHTML='<option value="">'+t.schedule_placeholder+'</option>'+

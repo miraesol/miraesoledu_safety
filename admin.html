@@ -542,8 +542,11 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-// ── 기본 데이터 ──
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
 const DEFAULT_DATA = {
   notice: { text: '2026년 4월 정기과정 접수 중 — 잔여석 12석 | 조기 마감될 수 있습니다', visible: 'show' },
   schedule: [
@@ -564,12 +567,60 @@ const DEFAULT_DATA = {
   password: 'admin1234'
 };
 
-// ── STORAGE ──
+// ══════════════════════════════════════════════
+// ▼▼▼ Firebase 설정값을 여기에 입력하세요 ▼▼▼
+// ══════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  databaseURL:       "YOUR_DATABASE_URL",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+// ══════════════════════════════════════════════
+
+// Firebase 초기화
+firebase.initializeApp(FIREBASE_CONFIG);
+var db = firebase.database();
+
+// ── 데이터 저장/불러오기 (Firebase) ──
 function getData(key) {
-  try { return JSON.parse(localStorage.getItem('miraesol_admin_' + key)) || DEFAULT_DATA[key]; }
-  catch(e) { return DEFAULT_DATA[key]; }
+  // 동기 fallback: 초기 렌더 시 로컬 캐시 사용
+  try {
+    var cached = localStorage.getItem('miraesol_cache_' + key);
+    return cached ? JSON.parse(cached) : DEFAULT_DATA[key];
+  } catch(e) { return DEFAULT_DATA[key]; }
 }
-function setData(key, val) { localStorage.setItem('miraesol_admin_' + key, JSON.stringify(val)); }
+function setData(key, val) {
+  // Firebase에 저장
+  db.ref('miraesol/' + key).set(val).catch(function(e){ console.error('Firebase 저장 오류:', e); });
+  // 로컬 캐시도 업데이트 (즉시 반영용)
+  localStorage.setItem('miraesol_cache_' + key, JSON.stringify(val));
+}
+
+// Firebase 실시간 수신 → 로컬 캐시 갱신 후 화면 갱신
+function listenFirebase() {
+  db.ref('miraesol').on('value', function(snap) {
+    var data = snap.val() || {};
+    Object.keys(data).forEach(function(key) {
+      localStorage.setItem('miraesol_cache_' + key, JSON.stringify(data[key]));
+    });
+    // 현재 열린 페이지 자동 갱신
+    var activePage = document.querySelector('.page.active');
+    if (activePage) {
+      var pid = activePage.id.replace('page-', '');
+      if (pid === 'schedule') initSchedule();
+      else if (pid === 'notice') initNotice();
+      else if (pid === 'fee') initFee();
+      else if (pid === 'contact') initContact();
+      else if (pid === 'faq') initFaq();
+      else if (pid === 'footer') initFooter();
+    }
+    updateDash();
+  });
+}
 
 // ── LOGIN ──
 const ADMIN_ID = 'admin';
@@ -623,6 +674,7 @@ function showToast(msg, ok=true) {
 // ── INIT ALL ──
 function initAll() {
   initNotice(); initSchedule(); initFee(); initContact(); initFaq(); initFooter(); initCompany(); updateDash();
+  listenFirebase(); // Firebase 실시간 수신 시작
 }
 
 // ── NOTICE ──
