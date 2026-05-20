@@ -1364,166 +1364,144 @@ var HP_FIREBASE_CONFIG = {
 
   function applyAllData(data) {
     if (!data) return;
+
+    // Firebase는 배열을 객체로 저장하므로 변환
+    function toArr(v) {
+      if (!v) return null;
+      if (Array.isArray(v)) return v;
+      return Object.values(v);
+    }
+
     var notice   = data.notice   || null;
-    var schedule = data.schedule ? Object.values(data.schedule) : null;
+    var schedule = toArr(data.schedule);
     var fee      = data.fee      || null;
     var con      = data.contact  || null;
     var footer   = data.footer   || null;
     var company  = data.company  || null;
-    var faq      = data.faq ? Object.values(data.faq) : null;
+    var faq      = toArr(data.faq);
 
-  // 1. 공지사항
-  var notice = notice;
-  if (notice) {
-    var strip = document.getElementById('hp-notice-strip');
-    var noticeText = document.getElementById('hp-notice-text');
-    if (strip) strip.style.display = notice.visible === 'hide' ? 'none' : 'flex';
-    if (noticeText) noticeText.textContent = notice.text;
-  }
-
-  // 2. 교육 일정
-  var schedule = getData('schedule', null);
-  if (schedule) {
-    var container = document.getElementById('hp-schedule-cards');
-    var fee = getData('fee', { amount: 75000 });
-    var feeAmt = Number(fee.amount).toLocaleString();
-    if (container) {
-      container.innerHTML = schedule.map(function(s) {
-        var isClosed = s.status === 'closed';
-        var isFeatured = s.status === 'open';
-        var badgeStyle = isClosed ? 'background:var(--gray-400);color:var(--white);' : '';
-        var cardStyle = isClosed ? 'opacity:0.6;filter:grayscale(30%);' : '';
-        var monthStyle = isClosed ? 'color:var(--gray-400);' : '';
-        return '<div class="sched-card' + (isFeatured ? ' featured' : '') + '" style="' + cardStyle + '">'
-          + (isClosed || isFeatured ? '<span class="sched-badge" style="' + badgeStyle + '">' + (isClosed ? '교육 종료' : '접수중') + '</span>' : '')
-          + '<div class="sched-month" style="' + monthStyle + '">' + s.month + '</div>'
-          + '<div class="sched-year">2026</div>'
-          + '<div class="sched-dates">' + s.date + '</div>'
-          + '<div class="sched-detail">' + s.round + ' 정기과정<br>장소: PC·모바일 등 온라인<br>교육비: ' + feeAmt + '원 / 1인</div>'
-          + '<div class="sched-status ' + s.status + '">' + s.label + '</div>'
-          + '</div>';
-      }).join('');
+    // 1. 공지사항
+    if (notice) {
+      var strip = document.getElementById('hp-notice-strip');
+      var noticeText = document.getElementById('hp-notice-text');
+      if (strip) strip.style.display = notice.visible === 'hide' ? 'none' : 'flex';
+      if (noticeText) noticeText.textContent = notice.text;
     }
 
-    // 희망 교육 일정 드롭다운 — 종료된 회차 제외
-    var activeSched = schedule.filter(function(s){ return s.status !== 'closed'; });
-    var scSel = document.getElementById('form-schedule');
-    if (scSel) {
-      var lang = localStorage.getItem('miraesol_lang') || 'ko';
-      var placeholder = lang === 'en' ? 'Select preferred date' : '일정 선택';
-      scSel.innerHTML = '<option value="">' + placeholder + '</option>' +
-        activeSched.map(function(s) {
-          var label = lang === 'en'
-            ? s.date + ' - Session ' + s.round.replace('차', '')
-            : s.date + ' - ' + s.round;
-          return '<option value="' + s.date + '">' + label + '</option>';
+    // 2. 교육 일정
+    if (schedule) {
+      var container = document.getElementById('hp-schedule-cards');
+      var feeAmt = fee ? Number(fee.amount).toLocaleString() : '75,000';
+      if (container) {
+        container.innerHTML = schedule.map(function(s) {
+          var isClosed  = s.status === 'closed';
+          var isFeatured = s.status === 'open';
+          var badgeStyle = isClosed ? 'background:var(--gray-400);color:var(--white);' : '';
+          var cardStyle  = isClosed ? 'opacity:0.6;filter:grayscale(30%);' : '';
+          var monthStyle = isClosed ? 'color:var(--gray-400);' : '';
+          return '<div class="sched-card' + (isFeatured ? ' featured' : '') + '" style="' + cardStyle + '">'
+            + (isClosed || isFeatured ? '<span class="sched-badge" style="' + badgeStyle + '">' + (isClosed ? '교육 종료' : '접수중') + '</span>' : '')
+            + '<div class="sched-month" style="' + monthStyle + '">' + s.month + '</div>'
+            + '<div class="sched-year">2026</div>'
+            + '<div class="sched-dates">' + s.date + '</div>'
+            + '<div class="sched-detail">' + s.round + ' 정기과정<br>장소: PC·모바일 등 온라인<br>교육비: ' + feeAmt + '원 / 1인</div>'
+            + '<div class="sched-status ' + s.status + '">' + s.label + '</div>'
+            + '</div>';
         }).join('');
+        var cols = Math.min(schedule.length, 4);
+        container.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+      }
+
+      // 드롭다운 — 종료된 회차 제외
+      var activeSched = schedule.filter(function(s){ return s.status !== 'closed'; });
+      var scSel = document.getElementById('form-schedule');
+      if (scSel) {
+        var lang = localStorage.getItem('miraesol_lang') || 'ko';
+        var placeholder = lang === 'en' ? 'Select preferred date' : '일정 선택';
+        scSel.innerHTML = '<option value="">' + placeholder + '</option>' +
+          activeSched.map(function(s) {
+            var label = lang === 'en'
+              ? s.date + ' - Session ' + s.round.replace('차', '')
+              : s.date + ' - ' + s.round;
+            return '<option value="' + s.date + '">' + label + '</option>';
+          }).join('');
+      }
     }
 
-    // 카드 수에 따라 grid 칼럼 자동 조정 (최대 4칸)
-    if (container) {
-      var cols = Math.min(schedule.length, 4);
-      container.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+    // 3. 교육비·계좌
+    if (fee) {
+      var feeText = document.getElementById('hp-fee-text');
+      var feeAmt2 = Number(fee.amount).toLocaleString();
+      if (feeText) feeText.innerHTML = '수강료: ' + feeAmt2 + '원 / 1인 (부가세 ' + (fee.tax||'포함') + ')<br>계좌: ' + fee.bank + ' ' + fee.account + ' ' + fee.holder;
+    }
+
+    // 4. 연락처
+    if (con) {
+      var ct = document.getElementById('hp-contact-text');
+      if (ct) ct.innerHTML = '전화: ' + con.phone + '<br>(평일 ' + con.timeStart + '~' + con.timeEnd + ' / 점심시간 ' + con.timeLunch + ')<br>이메일: ' + con.email;
+      var loc = document.getElementById('hp-location-text');
+      if (loc) loc.textContent = con.location;
+      var fp = document.getElementById('hp-footer-phone'); if (fp) fp.textContent = con.phone;
+      var fe = document.getElementById('hp-footer-email'); if (fe) fe.textContent = con.email;
+      var fh = document.getElementById('hp-footer-hours');
+      if (fh) fh.textContent = '평일 ' + con.timeStart + ' ~ ' + con.timeEnd + ' (점심 ' + con.timeLunch + ')';
+    }
+
+    // 5. 하단 푸터
+    if (footer) {
+      var fdesc = document.getElementById('hp-footer-desc'); if (fdesc) fdesc.textContent = footer.desc;
+      var fbottom = document.getElementById('hp-footer-bottom'); if (fbottom) fbottom.textContent = footer.bottom;
+      var fimg = document.getElementById('hp-footer-logo-img');
+      var ftxt = document.getElementById('hp-footer-logo-text');
+      if (footer.logoImg) {
+        if (fimg) { fimg.src = footer.logoImg; fimg.style.display = 'block'; }
+        if (ftxt) ftxt.style.display = 'none';
+      } else {
+        if (fimg) fimg.style.display = 'none';
+        if (ftxt) ftxt.style.display = '';
+      }
+    }
+
+    // 6. 회사정보
+    if (company) {
+      var el;
+      el = document.getElementById('hp-company-line1'); if(el) el.innerHTML = company.line1;
+      el = document.getElementById('hp-company-line2'); if(el) el.innerHTML = company.line2;
+      el = document.getElementById('hp-company-line3'); if(el) el.innerHTML = company.line3;
+      el = document.getElementById('hp-company-line4'); if(el) el.innerHTML = company.line4;
+      el = document.getElementById('hp-company-copyright'); if(el) el.innerHTML = company.copyright;
+      var cimg = document.getElementById('hp-company-logo-img');
+      var ctxt = document.getElementById('hp-company-logo-text');
+      if (company.logoImg) {
+        if (cimg) { cimg.src = company.logoImg; cimg.style.display = 'block'; }
+        if (ctxt) ctxt.style.display = 'none';
+      } else {
+        if (cimg) cimg.style.display = 'none';
+        if (ctxt) ctxt.style.display = '';
+      }
+    }
+
+    // 7. FAQ
+    if (faq) {
+      var faqList = document.getElementById('hp-faq-list');
+      if (faqList) {
+        faqList.innerHTML = faq.map(function(f) {
+          return '<div class="faq-item">'
+            + '<div class="faq-q" onclick="toggleFaq(this)">' + f.q + '<span class="faq-icon">+</span></div>'
+            + '<div class="faq-a">' + f.a + '</div>'
+            + '</div>';
+        }).join('');
+      }
     }
   }
-
-  // 3. 교육비·계좌
-  var fee = getData('fee', null);
-  if (fee) {
-    var feeText = document.getElementById('hp-fee-text');
-    var feeAmt = Number(fee.amount).toLocaleString();
-    if (feeText) feeText.innerHTML = '수강료: ' + feeAmt + '원 / 1인 (부가세 ' + fee.tax + ')<br>계좌: ' + fee.bank + ' ' + fee.account + ' ' + fee.holder;
-  }
-
-  // 4. 연락처
-  var con = getData('contact', null);
-  if (con) {
-    var ct = document.getElementById('hp-contact-text');
-    if (ct) ct.innerHTML = '전화: ' + con.phone + '<br>(평일 ' + con.timeStart + '~' + con.timeEnd + ' / 점심시간 ' + con.timeLunch + ')<br>이메일: ' + con.email;
-
-    var loc = document.getElementById('hp-location-text');
-    if (loc) loc.textContent = con.location;
-
-    var fp = document.getElementById('hp-footer-phone');
-    if (fp) fp.textContent = con.phone;
-    var fe = document.getElementById('hp-footer-email');
-    if (fe) fe.textContent = con.email;
-    var fh = document.getElementById('hp-footer-hours');
-    if (fh) fh.textContent = '평일 ' + con.timeStart + ' ~ ' + con.timeEnd + ' (점심 ' + con.timeLunch + ')';
-  }
-
-  // 6. 하단 푸터
-  var footer = getData('footer', null);
-  if (footer) {
-    var fdesc = document.getElementById('hp-footer-desc');
-    if (fdesc) fdesc.textContent = footer.desc;
-
-    var fbottom = document.getElementById('hp-footer-bottom');
-    if (fbottom) fbottom.textContent = footer.bottom;
-
-    var fimg = document.getElementById('hp-footer-logo-img');
-    var ftxt = document.getElementById('hp-footer-logo-text');
-    if (footer.logoImg) {
-      if (fimg) { fimg.src = footer.logoImg; fimg.style.display = 'block'; }
-      if (ftxt) ftxt.style.display = 'none';
-    } else {
-      if (fimg) fimg.style.display = 'none';
-      if (ftxt) ftxt.style.display = '';
-    }
-  }
-
-  // 7. 회사정보 바
-  var company = getData('company', null);
-  if (company) {
-    var el;
-    el = document.getElementById('hp-company-line1'); if(el) el.innerHTML = company.line1;
-    el = document.getElementById('hp-company-line2'); if(el) el.innerHTML = company.line2;
-    el = document.getElementById('hp-company-line3'); if(el) el.innerHTML = company.line3;
-    el = document.getElementById('hp-company-line4'); if(el) el.innerHTML = company.line4;
-    el = document.getElementById('hp-company-copyright'); if(el) el.innerHTML = company.copyright;
-
-    var cimg = document.getElementById('hp-company-logo-img');
-    var ctxt = document.getElementById('hp-company-logo-text');
-    if (company.logoImg) {
-      if (cimg) { cimg.src = company.logoImg; cimg.style.display = 'block'; }
-      if (ctxt) ctxt.style.display = 'none';
-    } else {
-      if (cimg) cimg.style.display = 'none';
-      if (ctxt) ctxt.style.display = '';
-    }
-  }
-
-  // 5. FAQ
-  if (faq) {
-    var faqList = document.getElementById('hp-faq-list');
-    if (faqList) {
-      faqList.innerHTML = faq.map(function(f) {
-        return '<div class="faq-item">'
-          + '<div class="faq-q" onclick="toggleFaq(this)">' + f.q + '<span class="faq-icon">+</span></div>'
-          + '<div class="faq-a">' + f.a + '</div>'
-          + '</div>';
-      }).join('');
-    }
-  }
-  } // end applyAllData
 
   // Firebase 실시간 수신
   hpDb.ref('miraesol').on('value', function(snap) {
     applyAllData(snap.val());
   }, function(err) {
-    console.warn('Firebase 연결 실패, 로컬 캐시 사용:', err.message);
-    // fallback: 로컬 캐시
-    var cached = {};
-    ['notice','schedule','fee','contact','footer','company','faq'].forEach(function(k) {
-      try {
-        var v = localStorage.getItem('miraesol_cache_' + k);
-        if (v) cached[k] = JSON.parse(v);
-      } catch(e) {}
-    });
-    applyAllData(cached);
+    console.warn('Firebase 연결 실패:', err.message);
   });
 })();
-</script>
 
 <!-- EmailJS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
