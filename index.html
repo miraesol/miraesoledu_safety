@@ -1336,42 +1336,20 @@
 </script>
 
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
 <script>
-// ══════════════════════════════════════════
-// ▼▼▼ Firebase 설정값을 여기에 입력 ▼▼▼
-// ══════════════════════════════════════════
-var HP_FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyB9VKlohD8kFUI_rQZacE17mmbx3VAzuuw",
-  authDomain:        "miraesol-safety.firebaseapp.com",
-  databaseURL:       "https://miraesol-safety-default-rtdb.firebaseio.com",
-  projectId:         "miraesol-safety",
-  storageBucket:     "miraesol-safety.firebasestorage.app",
-  messagingSenderId: "353424749239",
-  appId:             "1:353424749239:web:90adb8097bd4a658ea9332"
-};
-// ══════════════════════════════════════════
-
-// ── 관리자 데이터 연동 (Firebase 실시간) ──
+// ── 관리자 데이터 연동 (Firebase REST API) ──
 (function() {
-  var hpApp;
-  try { hpApp = firebase.app('hp'); } catch(e) {
-    hpApp = firebase.initializeApp(HP_FIREBASE_CONFIG, 'hp');
+  var FB_URL = "https://miraesol-safety-default-rtdb.firebaseio.com/miraesol";
+
+  function toArr(v) {
+    if (!v) return null;
+    if (Array.isArray(v)) return v;
+    return Object.values(v);
   }
-  var hpDb = firebase.database(hpApp);
 
   function applyAllData(data) {
     if (!data) return;
-
-    // Firebase는 배열을 객체로 저장하므로 변환
-    function toArr(v) {
-      if (!v) return null;
-      if (Array.isArray(v)) return v;
-      return Object.values(v);
-    }
-
     var notice   = data.notice   || null;
     var schedule = toArr(data.schedule);
     var fee      = data.fee      || null;
@@ -1394,7 +1372,7 @@ var HP_FIREBASE_CONFIG = {
       var feeAmt = fee ? Number(fee.amount).toLocaleString() : '75,000';
       if (container) {
         container.innerHTML = schedule.map(function(s) {
-          var isClosed  = s.status === 'closed';
+          var isClosed   = s.status === 'closed';
           var isFeatured = s.status === 'open';
           var badgeStyle = isClosed ? 'background:var(--gray-400);color:var(--white);' : '';
           var cardStyle  = isClosed ? 'opacity:0.6;filter:grayscale(30%);' : '';
@@ -1408,77 +1386,57 @@ var HP_FIREBASE_CONFIG = {
             + '<div class="sched-status ' + s.status + '">' + s.label + '</div>'
             + '</div>';
         }).join('');
-        var cols = Math.min(schedule.length, 4);
-        container.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+        container.style.gridTemplateColumns = 'repeat(' + Math.min(schedule.length, 4) + ', 1fr)';
       }
-
-      // 드롭다운 — 종료된 회차 제외
+      // 드롭다운 - 종료 제외
       var activeSched = schedule.filter(function(s){ return s.status !== 'closed'; });
       var scSel = document.getElementById('form-schedule');
       if (scSel) {
         var lang = localStorage.getItem('miraesol_lang') || 'ko';
-        var placeholder = lang === 'en' ? 'Select preferred date' : '일정 선택';
-        scSel.innerHTML = '<option value="">' + placeholder + '</option>' +
+        var ph = lang === 'en' ? 'Select preferred date' : '일정 선택';
+        scSel.innerHTML = '<option value="">' + ph + '</option>' +
           activeSched.map(function(s) {
-            var label = lang === 'en'
-              ? s.date + ' - Session ' + s.round.replace('차', '')
-              : s.date + ' - ' + s.round;
+            var label = lang === 'en' ? s.date + ' - Session ' + s.round.replace('차','') : s.date + ' - ' + s.round;
             return '<option value="' + s.date + '">' + label + '</option>';
           }).join('');
       }
     }
 
-    // 3. 교육비·계좌
+    // 3. 교육비
     if (fee) {
       var feeText = document.getElementById('hp-fee-text');
-      var feeAmt2 = Number(fee.amount).toLocaleString();
-      if (feeText) feeText.innerHTML = '수강료: ' + feeAmt2 + '원 / 1인 (부가세 ' + (fee.tax||'포함') + ')<br>계좌: ' + fee.bank + ' ' + fee.account + ' ' + fee.holder;
+      if (feeText) feeText.innerHTML = '수강료: ' + Number(fee.amount).toLocaleString() + '원 / 1인 (부가세 ' + (fee.tax||'포함') + ')<br>계좌: ' + fee.bank + ' ' + fee.account + ' ' + fee.holder;
     }
 
     // 4. 연락처
     if (con) {
       var ct = document.getElementById('hp-contact-text');
       if (ct) ct.innerHTML = '전화: ' + con.phone + '<br>(평일 ' + con.timeStart + '~' + con.timeEnd + ' / 점심시간 ' + con.timeLunch + ')<br>이메일: ' + con.email;
-      var loc = document.getElementById('hp-location-text');
-      if (loc) loc.textContent = con.location;
+      var loc = document.getElementById('hp-location-text'); if (loc) loc.textContent = con.location;
       var fp = document.getElementById('hp-footer-phone'); if (fp) fp.textContent = con.phone;
       var fe = document.getElementById('hp-footer-email'); if (fe) fe.textContent = con.email;
-      var fh = document.getElementById('hp-footer-hours');
-      if (fh) fh.textContent = '평일 ' + con.timeStart + ' ~ ' + con.timeEnd + ' (점심 ' + con.timeLunch + ')';
+      var fh = document.getElementById('hp-footer-hours'); if (fh) fh.textContent = '평일 ' + con.timeStart + ' ~ ' + con.timeEnd + ' (점심 ' + con.timeLunch + ')';
     }
 
-    // 5. 하단 푸터
+    // 5. 푸터
     if (footer) {
       var fdesc = document.getElementById('hp-footer-desc'); if (fdesc) fdesc.textContent = footer.desc;
       var fbottom = document.getElementById('hp-footer-bottom'); if (fbottom) fbottom.textContent = footer.bottom;
       var fimg = document.getElementById('hp-footer-logo-img');
       var ftxt = document.getElementById('hp-footer-logo-text');
-      if (footer.logoImg) {
-        if (fimg) { fimg.src = footer.logoImg; fimg.style.display = 'block'; }
-        if (ftxt) ftxt.style.display = 'none';
-      } else {
-        if (fimg) fimg.style.display = 'none';
-        if (ftxt) ftxt.style.display = '';
-      }
+      if (footer.logoImg) { if (fimg) { fimg.src = footer.logoImg; fimg.style.display = 'block'; } if (ftxt) ftxt.style.display = 'none'; }
+      else { if (fimg) fimg.style.display = 'none'; if (ftxt) ftxt.style.display = ''; }
     }
 
     // 6. 회사정보
     if (company) {
-      var el;
-      el = document.getElementById('hp-company-line1'); if(el) el.innerHTML = company.line1;
-      el = document.getElementById('hp-company-line2'); if(el) el.innerHTML = company.line2;
-      el = document.getElementById('hp-company-line3'); if(el) el.innerHTML = company.line3;
-      el = document.getElementById('hp-company-line4'); if(el) el.innerHTML = company.line4;
-      el = document.getElementById('hp-company-copyright'); if(el) el.innerHTML = company.copyright;
+      ['line1','line2','line3','line4','copyright'].forEach(function(k) {
+        var el = document.getElementById('hp-company-' + k); if (el) el.innerHTML = company[k] || '';
+      });
       var cimg = document.getElementById('hp-company-logo-img');
       var ctxt = document.getElementById('hp-company-logo-text');
-      if (company.logoImg) {
-        if (cimg) { cimg.src = company.logoImg; cimg.style.display = 'block'; }
-        if (ctxt) ctxt.style.display = 'none';
-      } else {
-        if (cimg) cimg.style.display = 'none';
-        if (ctxt) ctxt.style.display = '';
-      }
+      if (company.logoImg) { if (cimg) { cimg.src = company.logoImg; cimg.style.display = 'block'; } if (ctxt) ctxt.style.display = 'none'; }
+      else { if (cimg) cimg.style.display = 'none'; if (ctxt) ctxt.style.display = ''; }
     }
 
     // 7. FAQ
@@ -1486,21 +1444,17 @@ var HP_FIREBASE_CONFIG = {
       var faqList = document.getElementById('hp-faq-list');
       if (faqList) {
         faqList.innerHTML = faq.map(function(f) {
-          return '<div class="faq-item">'
-            + '<div class="faq-q" onclick="toggleFaq(this)">' + f.q + '<span class="faq-icon">+</span></div>'
-            + '<div class="faq-a">' + f.a + '</div>'
-            + '</div>';
+          return '<div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">' + f.q + '<span class="faq-icon">+</span></div><div class="faq-a">' + f.a + '</div></div>';
         }).join('');
       }
     }
   }
 
-  // Firebase 실시간 수신
-  hpDb.ref('miraesol').on('value', function(snap) {
-    applyAllData(snap.val());
-  }, function(err) {
-    console.warn('Firebase 연결 실패:', err.message);
-  });
+  // Firebase REST API로 데이터 읽기
+  fetch(FB_URL + '.json')
+    .then(function(res) { return res.json(); })
+    .then(function(data) { applyAllData(data); })
+    .catch(function(e) { console.warn('Firebase 로드 실패:', e.message); });
 })();
 </script>
 

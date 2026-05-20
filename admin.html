@@ -544,8 +544,6 @@
 <div class="toast" id="toast"></div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
 <script>
 const DEFAULT_DATA = {
@@ -568,84 +566,76 @@ const DEFAULT_DATA = {
   password: 'admin1234'
 };
 
-// ══════════════════════════════════════════════
-// ▼▼▼ Firebase 설정값을 여기에 입력하세요 ▼▼▼
-// ══════════════════════════════════════════════
-const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyB9VKlohD8kFUI_rQZacE17mmbx3VAzuuw",
-  authDomain:        "miraesol-safety.firebaseapp.com",
-  databaseURL:       "https://miraesol-safety-default-rtdb.firebaseio.com",
-  projectId:         "miraesol-safety",
-  storageBucket:     "miraesol-safety.firebasestorage.app",
-  messagingSenderId: "353424749239",
-  appId:             "1:353424749239:web:90adb8097bd4a658ea9332"
-};
-// ══════════════════════════════════════════════
+// Firebase REST API URL
+var FB_URL = "https://miraesol-safety-default-rtdb.firebaseio.com/miraesol";
 
-// Firebase 초기화
-firebase.initializeApp(FIREBASE_CONFIG);
-var db = firebase.database();
-
-// ── 데이터 저장/불러오기 (Firebase) ──
+// ── 데이터 저장/불러오기 (REST API) ──
 function getData(key) {
-  // 동기 fallback: 초기 렌더 시 로컬 캐시 사용
   try {
     var cached = localStorage.getItem('miraesol_cache_' + key);
     return cached ? JSON.parse(cached) : DEFAULT_DATA[key];
   } catch(e) { return DEFAULT_DATA[key]; }
 }
+
 function setData(key, val) {
-  // Firebase에 저장
-  db.ref('miraesol/' + key).set(val)
-    .then(function() {
-      console.log('Firebase 저장 성공:', key);
-    })
-    .catch(function(e) {
-      console.error('Firebase 저장 오류:', e);
-      showToast('❌ Firebase 저장 실패: ' + e.message, false);
-    });
+  var statusEl = document.getElementById('firebase-status');
+  // REST API로 Firebase에 저장
+  fetch(FB_URL + '/' + key + '.json', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(val)
+  })
+  .then(function(res) {
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  })
+  .then(function() {
+    console.log('Firebase 저장 성공:', key);
+    if (statusEl) { statusEl.innerHTML = '🟢 Firebase 연결됨'; statusEl.style.color = '#4ade80'; }
+  })
+  .catch(function(e) {
+    console.error('Firebase 저장 오류:', e);
+    showToast('❌ Firebase 저장 실패: ' + e.message, false);
+    if (statusEl) { statusEl.innerHTML = '🔴 저장 실패: ' + e.message; statusEl.style.color = '#f87171'; }
+  });
   // 로컬 캐시도 업데이트
   localStorage.setItem('miraesol_cache_' + key, JSON.stringify(val));
 }
 
 // Firebase 실시간 수신 → 로컬 캐시 갱신 후 화면 갱신
 function listenFirebase() {
-  // 연결 상태 표시
   var statusEl = document.getElementById('firebase-status');
+  if (statusEl) { statusEl.innerHTML = '🟡 Firebase 확인 중...'; statusEl.style.color = '#fbbf24'; }
 
-  db.ref('miraesol').on('value', function(snap) {
-    var firebaseData = snap.val();
-
+  fetch(FB_URL + '.json')
+  .then(function(res) { return res.json(); })
+  .then(function(firebaseData) {
     if (!firebaseData) {
-      // Firebase가 비어있으면 현재 데이터를 Firebase에 업로드
-      console.log('Firebase 비어있음 → 현재 데이터 업로드 중...');
+      // Firebase 비어있으면 기본 데이터 업로드
       var uploadData = {};
       ['notice','schedule','fee','contact','faq','footer','company'].forEach(function(key) {
         uploadData[key] = DEFAULT_DATA[key];
-        // 혹시 이전 버전 localStorage 데이터가 있으면 사용
         try {
           var old = localStorage.getItem('miraesol_admin_' + key);
           if (old) uploadData[key] = JSON.parse(old);
         } catch(e) {}
       });
-      db.ref('miraesol').set(uploadData)
-        .then(function(){ console.log('Firebase 초기 데이터 업로드 완료'); })
-        .catch(function(e){ console.error('Firebase 업로드 실패:', e); });
-      return;
+      return fetch(FB_URL + '.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(uploadData)
+      }).then(function() { return uploadData; });
     }
-
-    // Firebase 데이터를 로컬 캐시에 저장
-    Object.keys(firebaseData).forEach(function(key) {
-      localStorage.setItem('miraesol_cache_' + key, JSON.stringify(firebaseData[key]));
+    return firebaseData;
+  })
+  .then(function(data) {
+    if (!data) return;
+    // 캐시 업데이트
+    Object.keys(data).forEach(function(key) {
+      localStorage.setItem('miraesol_cache_' + key, JSON.stringify(data[key]));
     });
-
-    // 연결 상태 업데이트
-    if (statusEl) {
-      statusEl.innerHTML = '🟢 Firebase 연결됨';
-      statusEl.style.color = '#4ade80';
-    }
-
-    // 현재 열린 페이지 자동 갱신
+    if (statusEl) { statusEl.innerHTML = '🟢 Firebase 연결됨'; statusEl.style.color = '#4ade80'; }
+    // 현재 페이지 갱신
     var activePage = document.querySelector('.page.active');
     if (activePage) {
       var pid = activePage.id.replace('page-', '');
@@ -658,26 +648,10 @@ function listenFirebase() {
       else if (pid === 'company') initCompany();
     }
     updateDash();
-
-  }, function(err) {
-    console.error('Firebase 오류:', err);
-    if (statusEl) {
-      statusEl.innerHTML = '🔴 Firebase 연결 실패: ' + err.message;
-      statusEl.style.color = '#f87171';
-    }
-  });
-
-  // 연결 확인
-  db.ref('.info/connected').on('value', function(snap) {
-    if (statusEl) {
-      if (snap.val() === true) {
-        statusEl.innerHTML = '🟢 Firebase 연결됨';
-        statusEl.style.color = '#4ade80';
-      } else {
-        statusEl.innerHTML = '🟡 Firebase 연결 중...';
-        statusEl.style.color = '#fbbf24';
-      }
-    }
+  })
+  .catch(function(e) {
+    console.error('Firebase fetch 오류:', e);
+    if (statusEl) { statusEl.innerHTML = '🔴 연결 실패: ' + e.message; statusEl.style.color = '#f87171'; }
   });
 }
 
