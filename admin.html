@@ -603,26 +603,25 @@ function setData(key, val) {
 }
 
 // Firebase 실시간 수신 → 로컬 캐시 갱신 후 화면 갱신
-function listenFirebase() {
+function fetchFromFirebase(retryCount) {
+  retryCount = retryCount || 0;
   var statusEl = document.getElementById('firebase-status');
-  if (statusEl) { statusEl.innerHTML = '🟡 Firebase 확인 중...'; statusEl.style.color = '#fbbf24'; }
 
-  fetch(FB_URL + '.json')
-  .then(function(res) { return res.json(); })
+  fetch('https://miraesol-safety-default-rtdb.firebaseio.com/miraesol.json', {cache: 'no-store'})
+  .then(function(res) {
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  })
   .then(function(firebaseData) {
     if (!firebaseData) {
-      // Firebase 비어있으면 기본 데이터 업로드
       var uploadData = {};
       ['notice','schedule','fee','contact','faq','footer','company'].forEach(function(key) {
         uploadData[key] = DEFAULT_DATA[key];
-        try {
-          var old = localStorage.getItem('miraesol_admin_' + key);
-          if (old) uploadData[key] = JSON.parse(old);
-        } catch(e) {}
+        try { var old = localStorage.getItem('miraesol_admin_' + key); if (old) uploadData[key] = JSON.parse(old); } catch(e) {}
       });
-      return fetch(FB_URL + '.json', {
+      return fetch('https://miraesol-safety-default-rtdb.firebaseio.com/miraesol.json', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(uploadData)
       }).then(function() { return uploadData; });
     }
@@ -630,12 +629,10 @@ function listenFirebase() {
   })
   .then(function(data) {
     if (!data) return;
-    // 캐시 업데이트
     Object.keys(data).forEach(function(key) {
       localStorage.setItem('miraesol_cache_' + key, JSON.stringify(data[key]));
     });
     if (statusEl) { statusEl.innerHTML = '🟢 Firebase 연결됨'; statusEl.style.color = '#4ade80'; }
-    // 현재 페이지 갱신
     var activePage = document.querySelector('.page.active');
     if (activePage) {
       var pid = activePage.id.replace('page-', '');
@@ -650,9 +647,24 @@ function listenFirebase() {
     updateDash();
   })
   .catch(function(e) {
-    console.error('Firebase fetch 오류:', e);
-    if (statusEl) { statusEl.innerHTML = '🔴 연결 실패: ' + e.message; statusEl.style.color = '#f87171'; }
+    console.warn('Firebase 오류 (시도 ' + (retryCount+1) + '):', e.message);
+    if (retryCount < 4) {
+      // 재시도: 2초, 4초, 8초, 16초 간격
+      var delay = Math.pow(2, retryCount) * 2000;
+      if (statusEl) { statusEl.innerHTML = '🟡 재연결 중... (' + (retryCount+1) + '/5)'; statusEl.style.color = '#fbbf24'; }
+      setTimeout(function() { fetchFromFirebase(retryCount + 1); }, delay);
+    } else {
+      if (statusEl) { statusEl.innerHTML = '🔴 연결 실패 <button onclick="fetchFromFirebase(0)" style="margin-left:6px;padding:2px 8px;background:var(--accent);color:var(--navy);border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">재시도</button>'; statusEl.style.color = '#f87171'; }
+    }
   });
+}
+
+function listenFirebase() {
+  var statusEl = document.getElementById('firebase-status');
+  if (statusEl) { statusEl.innerHTML = '🟡 Firebase 연결 중...'; statusEl.style.color = '#fbbf24'; }
+  fetchFromFirebase(0);
+  // 30초마다 자동 갱신
+  setInterval(function() { fetchFromFirebase(0); }, 30000);
 }
 
 // ── LOGIN ──

@@ -1450,11 +1450,21 @@
     }
   }
 
-  // Firebase REST API로 데이터 읽기
-  fetch(FB_URL + '.json')
-    .then(function(res) { return res.json(); })
-    .then(function(data) { applyAllData(data); })
-    .catch(function(e) { console.warn('Firebase 로드 실패:', e.message); });
+  // Firebase REST API로 데이터 읽기 (재시도 포함)
+  function loadFromFirebase(retry) {
+    retry = retry || 0;
+    fetch('https://miraesol-safety-default-rtdb.firebaseio.com/miraesol.json', {cache: 'no-store'})
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) { applyAllData(data); })
+      .catch(function(e) {
+        console.warn('Firebase 로드 실패 (시도 ' + (retry+1) + '):', e.message);
+        if (retry < 4) setTimeout(function() { loadFromFirebase(retry + 1); }, (retry+1) * 2000);
+      });
+  }
+  loadFromFirebase(0);
 })();
 </script>
 
