@@ -578,6 +578,46 @@
   }
   .lang-btn.active { background: var(--accent); color: var(--navy); }
   .lang-btn:hover:not(.active) { color: rgba(255,255,255,0.9); }
+  /* Policy Modal (개인정보 처리방침) */
+  .policy-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(15,23,42,0.6); z-index: 9600;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .policy-overlay.open { display: flex; }
+  .policy-modal {
+    background: #fff; border-radius: 16px; width: 100%;
+    max-width: 640px; max-height: 82vh; overflow-y: auto;
+    box-shadow: 0 28px 70px rgba(15,23,42,0.35);
+    position: relative; padding: 34px 32px;
+    animation: policyIn .28s cubic-bezier(.34,1.2,.64,1);
+  }
+  @keyframes policyIn { from { opacity:0; transform:translateY(16px) scale(0.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+  .policy-modal-close {
+    position: absolute; top: 16px; right: 16px;
+    background: #f1f5f9; border: none; color: #64748b;
+    width: 32px; height: 32px; border-radius: 50%;
+    font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .policy-modal-close:hover { background: #e2e8f0; color: #1e293b; }
+  .policy-modal-title { font-size: 20px; font-weight: 800; color: #0a1628; margin-bottom: 6px; }
+  .policy-modal-updated { font-size: 12px; color: #94a3b8; margin-bottom: 20px; }
+  .policy-modal-body { font-size: 13.5px; color: #475569; line-height: 1.8; background: #f8fafc; border-radius: 10px; padding: 22px 24px; text-align: left; }
+  .policy-doc h4 { font-size: 14.5px; font-weight: 800; color: #1e293b; margin: 20px 0 8px; }
+  .policy-doc h4:first-child { margin-top: 0; }
+  .policy-doc p { margin: 0 0 10px; }
+  .policy-doc ul { margin: 0 0 10px; padding-left: 20px; }
+  .policy-doc li { margin-bottom: 4px; }
+  .policy-table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 13px; }
+  .policy-table th, .policy-table td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
+  .policy-table th { background: #eef2f7; font-weight: 700; color: #334155; }
+  .policy-effective { color: #94a3b8; font-size: 12px; margin-top: 16px; }
+  .footer-policy-link {
+    color: var(--accent); cursor: pointer; text-decoration: none;
+    font-weight: 600; transition: opacity 0.2s;
+  }
+  .footer-policy-link:hover { opacity: 0.75; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -1225,7 +1265,7 @@
         교육 종료 후 3년간 보관 후 파기됩니다.
       </div>
       <label class="agree-check" style="margin-bottom:1.3rem;">
-        <input type="checkbox" id="form-agree"> <span data-i18n="fl_agree">개인정보 수집·이용에 동의합니다</span> <a href="#" data-i18n="agree_link">(내용 보기)</a>
+        <input type="checkbox" id="form-agree"> <span data-i18n="fl_agree">개인정보 수집·이용에 동의합니다</span> <a href="#" onclick="openPolicyModal();return false;" data-i18n="agree_link">(내용 보기)</a>
       </label>
 
       <button class="submit-btn" id="submit-btn" onclick="handleSubmit(event)">
@@ -1296,16 +1336,28 @@
     <div id="hp-company-info" style="font-size:0.78rem; color:rgba(255,255,255,0.55); line-height:2;">
       <span id="hp-company-line1">주식회사 미래솔 &nbsp;|&nbsp; 서울특별시 영등포구 경인로 775, 1동 10층 1007호(문래동3가, 에이스하이테크시티)</span><br>
       <span id="hp-company-line2">대표전화 : <span id="hp-footer-phone">02-6952-2350</span> &nbsp;|&nbsp; 팩스 : 02-2068-8902 &nbsp;|&nbsp; 대표자 : 김은경</span><br>
-      <span id="hp-company-line3">이메일 : <span id="hp-footer-email">edu@miraesol.kr</span> &nbsp;|&nbsp; 개인정보보호 관리자 : 오동준</span><br>
+      <span id="hp-company-line3">이메일 : <span id="hp-footer-email">edu@miraesol.kr</span> &nbsp;|&nbsp; 개인정보보호 관리자 : 박기삼</span><br>
       <span id="hp-company-line4">사업자 등록번호 : 714-86-03283 &nbsp;|&nbsp; 원격평생교육시설 신고번호 : 제1067호</span><br>
       <span id="hp-footer-hours-wrap">운영시간 : <span id="hp-footer-hours">평일 09:00 ~ 17:00 (점심 12:00~13:30)</span></span><br>
       <span id="hp-company-copyright" style="color:#6baed6; font-size:0.74rem;">본 사이트 내의 컨텐츠는 저작권법 상의 보호를 받고 있습니다.</span>
     </div>
   </div>
-  <div class="footer-bottom" id="hp-footer-bottom">
-    © 2026 (주)미래솔. All rights reserved.
+  <div class="footer-bottom" id="hp-footer-bottom-wrap">
+    <span id="hp-footer-bottom">© 2026 (주)미래솔. All rights reserved.</span>
+    &nbsp;|&nbsp;
+    <span class="footer-policy-link" onclick="openPolicyModal()" data-i18n="footer_privacy">개인정보 처리방침</span>
   </div>
 </footer>
+
+<!-- 개인정보 처리방침 모달 -->
+<div class="policy-overlay" id="policyOverlay" onclick="if(event.target===this)closePolicyModal()">
+  <div class="policy-modal">
+    <button class="policy-modal-close" onclick="closePolicyModal()">✕</button>
+    <div class="policy-modal-title" id="policyModalTitle">개인정보 처리방침</div>
+    <div class="policy-modal-updated" id="policyModalUpdated">시행일자 : 2026년 7월 1일</div>
+    <div class="policy-modal-body" id="policyModalBody"></div>
+  </div>
+</div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
 
@@ -1810,7 +1862,6 @@ ko:{
   fl_name:'성명',fl_birth:'생년월일',fl_phone:'휴대폰 번호',fl_email:'이메일 주소',
   fl_company:'회사명',fl_dept:'부서 / 직책',fl_industry:'업종',fl_schedule:'희망 교육 일정',fl_message:'문의 사항',
   agree_text:'수집된 개인정보(성명, 연락처, 소속 등)는 교육 운영 및 수료증 발급 목적으로만 활용되며, 교육 종료 후 3년간 보관 후 파기됩니다.',
-  fl_agree:'개인정보 수집·이용에 동의합니다',
   fl_agree:'개인정보 수집·이용에 동의합니다', agree_link:'(내용 보기)',
   info_loc_body:'PC, 모바일 등 통신이 가능한 곳 어디나 가능',
   industry_placeholder:'업종 선택',
@@ -1826,6 +1877,7 @@ ko:{
   form_submit:'신청서 제출하기 ✓',
   ih_loc:'교육 장소',ih_fee:'교육비 납부',ih_contact:'문의 및 기업 단체 신청',ih_prep:'준비물',
   faq_label:'자주 묻는 질문',faq_title:'궁금한 사항을 확인하세요',
+  footer_privacy:'개인정보 처리방침',
   fq1:'교육을 이수하지 않으면 어떤 불이익이 있나요?',
   fq2:'교육비 환불은 어떻게 되나요?',
   fq3:'기업 단체 교육(출강교육)도 가능한가요?',
@@ -1944,6 +1996,7 @@ en:{
   form_submit:'Submit Application ✓',
   ih_loc:'Venue',ih_fee:'Payment Info',ih_contact:'Contact & Group Inquiries',ih_prep:'What to Bring',
   faq_label:'FAQ',faq_title:'Frequently Asked Questions',
+  footer_privacy:'Privacy Policy',
   fq1:'What penalties apply if training is not completed?',
   fq2:'What is the refund policy for the training fee?',
   fq3:'Is on-site corporate group training available?',
@@ -2111,6 +2164,160 @@ function setLang(lang) {
   badge.addEventListener('mouseenter',function(){ panel.style.display='block'; panel.offsetHeight; panel.style.opacity='1'; panel.style.transform='translateY(-50%) translateX(0)'; });
   badge.addEventListener('mouseleave',function(){ panel.style.opacity='0'; panel.style.transform='translateY(-50%) translateX(60px)'; setTimeout(function(){ panel.style.display='none'; },450); });
 })();
+</script><!-- 개인정보 처리방침 모달 JS -->
+<script>
+var PRIVACY_POLICY = {
+  ko: {
+    title: '개인정보 처리방침',
+    updated: '시행일자 : 2026년 7월 1일',
+    body: '<div class="policy-doc">' +
+      '<p><strong>주식회사 미래솔</strong>(이하 "회사")은 이용자의 개인정보를 중요시하며, 「개인정보보호법」, 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」, 「산업안전보건법」 등 관련 법령을 준수하고 있습니다. 회사는 본 개인정보처리방침을 통하여 이용자가 제공하는 개인정보가 어떠한 목적과 방식으로 이용되고 있으며, 개인정보보호를 위해 어떠한 조치가 취해지고 있는지 알려드립니다.</p>' +
+      '<h4>제1조 (수집하는 개인정보의 항목 및 수집방법)</h4>' +
+      '<p>회사는 산업안전관리감독자 교육 신청, 상담, 수강 및 수료증 발급 등을 위하여 아래와 같은 개인정보를 수집합니다.</p>' +
+      '<ul>' +
+      '<li>필수항목: 성명, 생년월일, 연락처(휴대전화번호), 회사명, 업종, 희망 교육일정</li>' +
+      '<li>선택항목: 이메일 주소, 부서/직책, 문의사항</li>' +
+      '<li>서비스 이용 과정에서 자동 생성·수집되는 정보: 접속 IP, 쿠키, 접속 로그, 서비스 이용기록, 학습 진도 기록</li>' +
+      '<li>수집방법: 홈페이지 내 교육신청 양식, 이메일, 전화 상담 등</li>' +
+      '</ul>' +
+      '<h4>제2조 (개인정보의 수집 및 이용목적)</h4>' +
+      '<ul>' +
+      '<li>교육 신청 접수 및 상담, 수강 등록 처리</li>' +
+      '<li>산업안전보건교육 운영 및 학습 관리(출석·진도 확인)</li>' +
+      '<li>수료증 및 교육이수 확인서 발급</li>' +
+      '<li>교육 관련 안내(일정, 접속 링크, 공지사항 전달)</li>' +
+      '<li>고객 상담 및 불만처리 등 민원 처리</li>' +
+      '<li>법정 의무교육 이수 증빙자료 보관</li>' +
+      '</ul>' +
+      '<h4>제3조 (개인정보의 보유 및 이용기간)</h4>' +
+      '<p>회사는 법령에 따른 개인정보 보유·이용기간 또는 정보주체로부터 동의받은 보유·이용기간 내에서 개인정보를 처리·보유합니다. 관계법령의 규정에 따라 보존할 필요가 있는 경우 아래와 같이 일정 기간 동안 정보를 보관합니다.</p>' +
+      '<ul>' +
+      '<li>교육 이수 및 수료 증빙에 관한 기록: 3년 (산업안전보건법 시행규칙)</li>' +
+      '<li>계약 또는 청약철회 등에 관한 기록: 5년 (전자상거래 등에서의 소비자보호에 관한 법률)</li>' +
+      '<li>대금결제 및 재화 등의 공급에 관한 기록: 5년 (전자상거래 등에서의 소비자보호에 관한 법률)</li>' +
+      '<li>소비자의 불만 또는 분쟁처리에 관한 기록: 3년 (전자상거래 등에서의 소비자보호에 관한 법률)</li>' +
+      '<li>웹사이트 방문기록: 3개월 (통신비밀보호법)</li>' +
+      '</ul>' +
+      '<h4>제4조 (개인정보의 파기절차 및 방법)</h4>' +
+      '<p>회사는 개인정보 보유기간의 경과, 처리목적 달성 등 개인정보가 불필요하게 되었을 때에는 지체없이 해당 개인정보를 파기합니다. 전자적 파일 형태로 기록·저장된 개인정보는 기록을 재생할 수 없는 기술적 방법을 사용하여 삭제하며, 종이에 출력된 개인정보는 분쇄기로 분쇄하거나 소각하여 파기합니다.</p>' +
+      '<h4>제5조 (개인정보의 제3자 제공)</h4>' +
+      '<p>회사는 정보주체의 개인정보를 원칙적으로 외부에 제공하지 않으며, 다만 아래의 경우에는 예외로 합니다.</p>' +
+      '<ul>' +
+      '<li>정보주체로부터 별도의 동의를 받은 경우</li>' +
+      '<li>법정 의무교육 이수 결과를 관계 행정기관(고용노동부, 한국산업안전보건공단 등)에 보고해야 하는 경우</li>' +
+      '<li>법령의 규정에 의거하거나, 수사 목적으로 법령에 정해진 절차와 방법에 따라 수사기관의 요구가 있는 경우</li>' +
+      '</ul>' +
+      '<h4>제6조 (개인정보 처리업무의 위탁)</h4>' +
+      '<p>회사는 원활한 교육 서비스 제공을 위하여 아래와 같이 개인정보 처리업무를 외부 전문업체에 위탁할 수 있으며, 위탁계약 체결 시 개인정보보호법 제26조에 따라 위탁업무 수행목적 외 개인정보 처리금지, 기술적·관리적 보호조치, 재위탁 제한, 수탁자에 대한 관리·감독 등을 규정하고 있습니다.</p>' +
+      '<table class="policy-table"><tr><th>수탁업체</th><th>위탁업무 내용</th></tr>' +
+      '<tr><td>LMS 운영 위탁사</td><td>온라인 학습관리시스템(LMS) 운영 및 학습 데이터 관리</td></tr></table>' +
+      '<h4>제7조 (정보주체의 권리·의무 및 행사방법)</h4>' +
+      '<p>정보주체는 회사에 대해 언제든지 개인정보 열람·정정·삭제·처리정지 요구 등의 권리를 행사할 수 있습니다. 권리 행사는 회사에 대해 서면, 전화, 이메일 등을 통하여 하실 수 있으며 회사는 이에 대해 지체없이 조치하겠습니다. 다만, 법정 의무교육 이수 증빙 등 관계 법령에 따라 보존이 필요한 정보는 삭제가 제한될 수 있습니다.</p>' +
+      '<h4>제8조 (개인정보의 안전성 확보조치)</h4>' +
+      '<p>회사는 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고 있습니다.</p>' +
+      '<ul>' +
+      '<li>개인정보 취급 직원의 최소화 및 교육</li>' +
+      '<li>개인정보에 대한 접근 제한(권한 관리) 및 접근 통제</li>' +
+      '<li>개인정보를 저장하는 데이터베이스 시스템에 대한 접근권한의 부여·변경·말소를 통한 접근통제</li>' +
+      '<li>해킹 등에 대비한 기술적 대책(보안프로그램 설치 및 갱신, 접근 차단 등)</li>' +
+      '</ul>' +
+      '<h4>제9조 (개인정보 보호책임자)</h4>' +
+      '<p>회사는 개인정보 처리에 관한 업무를 총괄해서 책임지고, 개인정보 처리와 관련한 정보주체의 불만처리 및 피해구제 등을 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.</p>' +
+      '<ul>' +
+      '<li>개인정보 보호책임자 : 박기삼</li>' +
+      '<li>담당부서 : 교육운영팀</li>' +
+      '<li>연락처 : 02-6952-2350 / edu@miraesol.kr</li>' +
+      '</ul>' +
+      '<p>정보주체는 회사의 서비스를 이용하시면서 발생한 모든 개인정보 보호 관련 문의, 불만처리, 피해구제 등에 관한 사항을 개인정보 보호책임자 및 담당부서로 문의하실 수 있습니다.</p>' +
+      '<h4>제10조 (개인정보처리방침의 변경)</h4>' +
+      '<p>이 개인정보처리방침은 시행일로부터 적용되며, 법령 및 방침에 따른 변경내용의 추가·삭제 및 정정이 있는 경우에는 변경사항의 시행 7일 전부터 공지사항을 통하여 고지할 것입니다.</p>' +
+      '<p class="policy-effective">시행일자 : 2026년 7월 1일</p>' +
+      '</div>'
+  },
+  en: {
+    title: 'Privacy Policy',
+    updated: 'Effective Date: July 1, 2026',
+    body: '<div class="policy-doc">' +
+      '<p><strong>Miraesol Co., Ltd.</strong> (the "Company") values users\' personal information and complies with the Personal Information Protection Act, the Act on Promotion of Information and Communications Network Utilization and Information Protection, and the Occupational Safety and Health Act. This Privacy Policy explains how the personal information you provide is used and what measures are taken to protect it.</p>' +
+      '<h4>Article 1 (Items Collected and Collection Methods)</h4>' +
+      '<p>The Company collects the following personal information for training registration, consultation, course delivery, and certificate issuance.</p>' +
+      '<ul>' +
+      '<li>Required: name, date of birth, contact number, company name, industry, preferred training date</li>' +
+      '<li>Optional: email address, department/title, inquiries</li>' +
+      '<li>Automatically collected: IP address, cookies, access logs, service usage records, learning progress</li>' +
+      '<li>Collection method: online application form, email, phone consultation</li>' +
+      '</ul>' +
+      '<h4>Article 2 (Purpose of Collection and Use)</h4>' +
+      '<ul>' +
+      '<li>Training application processing and enrollment</li>' +
+      '<li>Occupational safety training operation and learning management (attendance/progress)</li>' +
+      '<li>Issuance of certificates and completion confirmations</li>' +
+      '<li>Training-related notices (schedule, access links, announcements)</li>' +
+      '<li>Customer consultation and complaint handling</li>' +
+      '<li>Retention of mandatory training completion records</li>' +
+      '</ul>' +
+      '<h4>Article 3 (Retention Period)</h4>' +
+      '<p>The Company retains personal information within the period required by law or consented to by the data subject.</p>' +
+      '<ul>' +
+      '<li>Training completion records: 3 years (OSH Act Enforcement Rule)</li>' +
+      '<li>Records on contracts or withdrawal: 5 years (E-Commerce Consumer Protection Act)</li>' +
+      '<li>Records on payment and supply: 5 years (E-Commerce Consumer Protection Act)</li>' +
+      '<li>Records on complaints or disputes: 3 years (E-Commerce Consumer Protection Act)</li>' +
+      '<li>Website visit records: 3 months (Protection of Communications Secrets Act)</li>' +
+      '</ul>' +
+      '<h4>Article 4 (Destruction Procedure)</h4>' +
+      '<p>When personal information becomes unnecessary, the Company destroys it without delay. Electronic files are deleted using irrecoverable technical methods, and printed documents are shredded or incinerated.</p>' +
+      '<h4>Article 5 (Provision to Third Parties)</h4>' +
+      '<p>The Company does not provide personal information to third parties in principle, except in the following cases:</p>' +
+      '<ul>' +
+      '<li>When separate consent is obtained from the data subject</li>' +
+      '<li>When mandatory training completion results must be reported to relevant authorities (Ministry of Employment and Labor, KOSHA, etc.)</li>' +
+      '<li>When required by law or by investigative agencies following legal procedures</li>' +
+      '</ul>' +
+      '<h4>Article 6 (Entrustment of Processing)</h4>' +
+      '<p>The Company may entrust personal information processing to specialized external providers for smooth training service delivery, with proper safeguards under Article 26 of the Personal Information Protection Act.</p>' +
+      '<table class="policy-table"><tr><th>Trustee</th><th>Entrusted Work</th></tr>' +
+      '<tr><td>LMS Operator</td><td>Online learning management system (LMS) operation and data management</td></tr></table>' +
+      '<h4>Article 7 (Rights of Data Subjects)</h4>' +
+      '<p>Data subjects may exercise the right to access, correct, delete, or suspend processing of their personal information at any time via written request, phone, or email. However, information required to be retained by law (e.g., training completion records) may be restricted from deletion.</p>' +
+      '<h4>Article 8 (Security Measures)</h4>' +
+      '<ul>' +
+      '<li>Minimization and training of staff handling personal information</li>' +
+      '<li>Access restriction and control for personal information</li>' +
+      '<li>Access control through granting/changing/revoking database access rights</li>' +
+      '<li>Technical measures against hacking (security programs, access blocking, etc.)</li>' +
+      '</ul>' +
+      '<h4>Article 9 (Privacy Officer)</h4>' +
+      '<ul>' +
+      '<li>Privacy Officer: Park Ki-sam</li>' +
+      '<li>Department: Training Operations Team</li>' +
+      '<li>Contact: 02-6952-2350 / edu@miraesol.kr</li>' +
+      '</ul>' +
+      '<h4>Article 10 (Changes to This Policy)</h4>' +
+      '<p>This Privacy Policy applies from the effective date. Any additions, deletions, or corrections will be announced at least 7 days before they take effect.</p>' +
+      '<p class="policy-effective">Effective Date: July 1, 2026</p>' +
+      '</div>'
+  }
+};
+
+function openPolicyModal() {
+  var lang = localStorage.getItem('miraesol_lang') || 'ko';
+  var p = PRIVACY_POLICY[lang] || PRIVACY_POLICY.ko;
+  document.getElementById('policyModalTitle').textContent = p.title;
+  document.getElementById('policyModalUpdated').textContent = p.updated;
+  document.getElementById('policyModalBody').innerHTML = p.body;
+  document.getElementById('policyOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closePolicyModal() {
+  document.getElementById('policyOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+// ESC로 닫기
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closePolicyModal();
+});
 </script>
+
 </body>
 </html>
