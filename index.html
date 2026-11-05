@@ -1268,6 +1268,10 @@
         <input type="checkbox" id="form-agree"> <span data-i18n="fl_agree">개인정보 수집·이용에 동의합니다</span> <a href="#" onclick="openPolicyModal();return false;" data-i18n="agree_link">(내용 보기)</a>
       </label>
 
+      <!-- 자동 스팸 차단용 숨은 칸 (사람에게는 보이지 않음) -->
+      <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
+        <label>Website <input type="text" id="form-website" name="website" tabindex="-1" autocomplete="off"></label>
+      </div>
       <button class="submit-btn" id="submit-btn" onclick="handleSubmit(event)">
         신청서 제출하기 ✓
       </button>
@@ -1359,7 +1363,7 @@
   </div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+
 
 <!-- 등록증 패널 fixed -->
 <div id="certPanel" style="display:none; position:fixed; z-index:9999; top:50%; right:10%; transform:translateY(-50%); width:368px; border-radius:10px; overflow:hidden; box-shadow:0 24px 64px rgba(0,0,0,0.7); border:2px solid rgba(245,166,35,0.5); transition:opacity 0.4s ease, transform 0.45s cubic-bezier(0.22,1,0.36,1); opacity:0; transform:translateY(-50%) translateX(60px);">
@@ -1390,6 +1394,25 @@
 <!-- Firebase SDK -->
 
 <script>
+// ── 출력 안전 처리 (Firebase 값은 HTML로 해석하지 않음) ──
+function hpEsc(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+// 회사정보처럼 '&nbsp;' 공백만 허용하고 나머지 태그는 모두 글자로 표시
+function hpEscKeepNbsp(v) { return hpEsc(v).replace(/&amp;nbsp;/g, '&nbsp;'); }
+function hpSafeImg(v) { return (typeof v === 'string' && /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(v)) ? v : ''; }
+function hpStatus(v) { return ['open','soon','closed'].indexOf(v) >= 0 ? v : 'soon'; }
+function hpScheduleOptions(list, lang, placeholder) {
+  return '<option value="">' + hpEsc(placeholder) + '</option>' +
+    list.filter(function(s){ return s && s.status !== 'closed'; }).map(function(s) {
+      var label = lang === 'en' ? s.date + ' - Session ' + String(s.round || '').replace('차','') : s.date + ' - ' + s.round;
+      return '<option value="' + hpEsc(s.date) + '">' + hpEsc(label) + '</option>';
+    }).join('');
+}
+window.HP_SCHEDULE = null;
+
 // ── 관리자 데이터 연동 (Firebase REST API) ──
 (function() {
   var FB_URL = "https://miraesol-safety-default-rtdb.firebaseio.com/miraesol";
@@ -1421,49 +1444,45 @@
     // 2. 교육 일정
     if (schedule) {
       var container = document.getElementById('hp-schedule-cards');
-      var feeAmt = fee ? Number(fee.amount).toLocaleString() : '75,000';
+      var feeAmt = (fee && !isNaN(Number(fee.amount))) ? Number(fee.amount).toLocaleString() : '75,000';
       if (container) {
         container.innerHTML = schedule.map(function(s) {
-          var isClosed   = s.status === 'closed';
-          var isFeatured = s.status === 'open';
+          var st = hpStatus(s.status);
+          var isClosed   = st === 'closed';
+          var isFeatured = st === 'open';
           var badgeStyle = isClosed ? 'background:var(--gray-400);color:var(--white);' : '';
           var cardStyle  = isClosed ? 'opacity:0.6;filter:grayscale(30%);' : '';
           var monthStyle = isClosed ? 'color:var(--gray-400);' : '';
           return '<div class="sched-card' + (isFeatured ? ' featured' : '') + '" style="' + cardStyle + '">'
             + (isClosed || isFeatured ? '<span class="sched-badge" style="' + badgeStyle + '">' + (isClosed ? '교육 종료' : '접수중') + '</span>' : '')
-            + '<div class="sched-month" style="' + monthStyle + '">' + s.month + '</div>'
+            + '<div class="sched-month" style="' + monthStyle + '">' + hpEsc(s.month) + '</div>'
             + '<div class="sched-year">2026</div>'
-            + '<div class="sched-dates">' + s.date + '</div>'
-            + '<div class="sched-detail">' + s.round + ' 정기과정<br>장소: PC·모바일 등 온라인<br>교육비: ' + feeAmt + '원 / 1인</div>'
-            + '<div class="sched-status ' + s.status + '">' + s.label + '</div>'
+            + '<div class="sched-dates">' + hpEsc(s.date) + '</div>'
+            + '<div class="sched-detail">' + hpEsc(s.round) + ' 정기과정<br>장소: PC·모바일 등 온라인<br>교육비: ' + hpEsc(feeAmt) + '원 / 1인</div>'
+            + '<div class="sched-status ' + st + '">' + hpEsc(s.label) + '</div>'
             + '</div>';
         }).join('');
         container.style.gridTemplateColumns = 'repeat(' + Math.min(schedule.length, 4) + ', 1fr)';
       }
       // 드롭다운 - 종료 제외
-      var activeSched = schedule.filter(function(s){ return s.status !== 'closed'; });
+      window.HP_SCHEDULE = schedule;
       var scSel = document.getElementById('form-schedule');
       if (scSel) {
         var lang = localStorage.getItem('miraesol_lang') || 'ko';
-        var ph = lang === 'en' ? 'Select preferred date' : '일정 선택';
-        scSel.innerHTML = '<option value="">' + ph + '</option>' +
-          activeSched.map(function(s) {
-            var label = lang === 'en' ? s.date + ' - Session ' + s.round.replace('차','') : s.date + ' - ' + s.round;
-            return '<option value="' + s.date + '">' + label + '</option>';
-          }).join('');
+        scSel.innerHTML = hpScheduleOptions(schedule, lang, lang === 'en' ? 'Select preferred date' : '일정 선택');
       }
     }
 
     // 3. 교육비
     if (fee) {
       var feeText = document.getElementById('hp-fee-text');
-      if (feeText) feeText.innerHTML = '수강료: ' + Number(fee.amount).toLocaleString() + '원 / 1인 (부가세 ' + (fee.tax||'포함') + ')<br>계좌: ' + fee.bank + ' ' + fee.account + ' ' + fee.holder;
+      if (feeText) feeText.innerHTML = '수강료: ' + hpEsc(Number(fee.amount).toLocaleString()) + '원 / 1인 (부가세 ' + hpEsc(fee.tax||'포함') + ')<br>계좌: ' + hpEsc(fee.bank) + ' ' + hpEsc(fee.account) + ' ' + hpEsc(fee.holder);
     }
 
     // 4. 연락처
     if (con) {
       var ct = document.getElementById('hp-contact-text');
-      if (ct) ct.innerHTML = '전화: ' + con.phone + '<br>(평일 ' + con.timeStart + '~' + con.timeEnd + ' / 점심시간 ' + con.timeLunch + ')<br>이메일: ' + con.email;
+      if (ct) ct.innerHTML = '전화: ' + hpEsc(con.phone) + '<br>(평일 ' + hpEsc(con.timeStart) + '~' + hpEsc(con.timeEnd) + ' / 점심시간 ' + hpEsc(con.timeLunch) + ')<br>이메일: ' + hpEsc(con.email);
       var loc = document.getElementById('hp-location-text'); if (loc) loc.textContent = con.location;
       var fp = document.getElementById('hp-footer-phone'); if (fp) fp.textContent = con.phone;
       var fe = document.getElementById('hp-footer-email'); if (fe) fe.textContent = con.email;
@@ -1476,18 +1495,18 @@
       var fbottom = document.getElementById('hp-footer-bottom'); if (fbottom) fbottom.textContent = footer.bottom;
       var fimg = document.getElementById('hp-footer-logo-img');
       var ftxt = document.getElementById('hp-footer-logo-text');
-      if (footer.logoImg) { if (fimg) { fimg.src = footer.logoImg; fimg.style.display = 'block'; } if (ftxt) ftxt.style.display = 'none'; }
+      if (hpSafeImg(footer.logoImg)) { if (fimg) { fimg.src = hpSafeImg(footer.logoImg); fimg.style.display = 'block'; } if (ftxt) ftxt.style.display = 'none'; }
       else { if (fimg) fimg.style.display = 'none'; if (ftxt) ftxt.style.display = ''; }
     }
 
     // 6. 회사정보
     if (company) {
       ['line1','line2','line3','line4','copyright'].forEach(function(k) {
-        var el = document.getElementById('hp-company-' + k); if (el) el.innerHTML = company[k] || '';
+        var el = document.getElementById('hp-company-' + k); if (el) el.innerHTML = hpEscKeepNbsp(company[k] || '');
       });
       var cimg = document.getElementById('hp-company-logo-img');
       var ctxt = document.getElementById('hp-company-logo-text');
-      if (company.logoImg) { if (cimg) { cimg.src = company.logoImg; cimg.style.display = 'block'; } if (ctxt) ctxt.style.display = 'none'; }
+      if (hpSafeImg(company.logoImg)) { if (cimg) { cimg.src = hpSafeImg(company.logoImg); cimg.style.display = 'block'; } if (ctxt) ctxt.style.display = 'none'; }
       else { if (cimg) cimg.style.display = 'none'; if (ctxt) ctxt.style.display = ''; }
     }
 
@@ -1496,7 +1515,7 @@
       var faqList = document.getElementById('hp-faq-list');
       if (faqList) {
         faqList.innerHTML = faq.map(function(f) {
-          return '<div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">' + f.q + '<span class="faq-icon">+</span></div><div class="faq-a">' + f.a + '</div></div>';
+          return '<div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)">' + hpEsc(f && f.q) + '<span class="faq-icon">+</span></div><div class="faq-a">' + hpEsc(f && f.a).replace(/\n/g, '<br>') + '</div></div>';
         }).join('');
       }
     }
@@ -1550,6 +1569,15 @@
     if (!schedule) return alert('희망 교육 일정을 선택해 주세요.');
     if (!agree)    return alert('개인정보 수집·이용에 동의해 주세요.');
 
+    // 자동 프로그램 차단: 숨은 칸이 채워져 있으면 전송하지 않음
+    var hp = document.getElementById('form-website');
+    if (hp && hp.value) { btn.textContent = '✅ 신청이 완료되었습니다!'; return; }
+    // 같은 브라우저에서 1분 안 재전송 방지
+    var lastSent = 0;
+    try { lastSent = parseInt(localStorage.getItem('miraesol_last_submit') || '0', 10); } catch(e2) {}
+    var waitSec = Math.ceil((60000 - (Date.now() - lastSent)) / 1000);
+    if (waitSec > 0) return alert('신청서가 이미 접수되었습니다. ' + waitSec + '초 후에 다시 시도해 주세요.');
+
     btn.textContent = '전송 중...';
     btn.disabled = true;
     btn.style.opacity = '0.7';
@@ -1568,6 +1596,7 @@
 
     emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
       .then(function() {
+        try { localStorage.setItem('miraesol_last_submit', String(Date.now())); } catch(e3) {}
         btn.textContent = '✅ 신청이 완료되었습니다!';
         btn.style.background = '#4ade80';
         btn.style.color = '#0a1628';
@@ -2031,18 +2060,8 @@ function setLang(lang) {
   // 희망 교육 일정 — localStorage 기준으로 종료된 회차 제외
   var scSel = document.getElementById('form-schedule');
   if(scSel) {
-    var savedSched;
-    try { savedSched = JSON.parse(localStorage.getItem('miraesol_cache_schedule')); } catch(e) { savedSched = null; }
-
-    if(savedSched) {
-      var activeSched = savedSched.filter(function(s){ return s.status !== 'closed'; });
-      scSel.innerHTML = '<option value="">' + t.schedule_placeholder + '</option>' +
-        activeSched.map(function(s){
-          var label = lang === 'en'
-            ? s.date + ' - Session ' + s.round.replace('차','')
-            : s.date + ' - ' + s.round;
-          return '<option value="' + s.date + '">' + label + '</option>';
-        }).join('');
+    if(window.HP_SCHEDULE) {
+      scSel.innerHTML = hpScheduleOptions(window.HP_SCHEDULE, lang, t.schedule_placeholder);
     } else {
       // localStorage에 데이터 없으면 기본 목록 사용
       scSel.innerHTML = '<option value="">' + t.schedule_placeholder + '</option>' +
@@ -2131,12 +2150,8 @@ function setLang(lang) {
     // 희망 교육 일정 — 종료된 회차 제외
     var scSel=document.getElementById('form-schedule');
     if(scSel) {
-      var savedSched2;
-      try { savedSched2 = JSON.parse(localStorage.getItem('miraesol_cache_schedule')); } catch(e) { savedSched2 = null; }
-      if(savedSched2) {
-        var active2 = savedSched2.filter(function(s){ return s.status !== 'closed'; });
-        scSel.innerHTML='<option value="">'+t.schedule_placeholder+'</option>'+
-          active2.map(function(s){ return '<option value="'+s.date+'">'+s.date+' - '+s.round+'</option>'; }).join('');
+      if(window.HP_SCHEDULE) {
+        scSel.innerHTML = hpScheduleOptions(window.HP_SCHEDULE, 'ko', t.schedule_placeholder);
       } else {
         scSel.innerHTML='<option value="">'+t.schedule_placeholder+'</option>'+t.schedule_opts.map(function(o){return '<option>'+o+'</option>';}).join('');
       }

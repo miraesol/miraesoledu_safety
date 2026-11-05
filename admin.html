@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>관리자 페이지 | 미래솔 안전교육</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -222,12 +223,12 @@
   <div class="login-box">
     <div class="login-logo">미래솔<span>SAFETY</span></div>
     <p class="login-sub">관리자 페이지에 로그인하세요</p>
-    <label class="login-label">아이디</label>
-    <input type="text" class="login-input" id="loginId" placeholder="admin" autocomplete="username">
+    <label class="login-label">관리자 이메일</label>
+    <input type="email" class="login-input" id="loginId" placeholder="admin@example.com" autocomplete="username">
     <label class="login-label">비밀번호</label>
     <input type="password" class="login-input" id="loginPw" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="login-btn" onclick="doLogin()">로그인</button>
-    <p class="login-err" id="loginErr">아이디 또는 비밀번호가 올바르지 않습니다.</p>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">로그인</button>
+    <p class="login-err" id="loginErr">이메일 또는 비밀번호가 올바르지 않습니다.</p>
   </div>
 </div>
 
@@ -275,7 +276,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-label">이메일</div>
-          <div class="stat-val" style="font-size:0.9rem;" id="dash-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7411100134191d061511071b185a171b5a1f06">[email&#160;protected]</a></div>
+          <div class="stat-val" style="font-size:0.9rem;" id="dash-email">edu@miraesol.kr</div>
         </div>
       </div>
       <div class="card">
@@ -301,7 +302,7 @@
         <div class="card-title">💡 사용 안내</div>
         <p style="font-size:0.85rem;color:var(--gray-600);line-height:1.8;">
           각 메뉴에서 내용을 수정하고 <strong>저장</strong> 버튼을 누르면 홈페이지에 즉시 반영됩니다.<br>
-          저장된 데이터는 브라우저에 보관되므로, 홈페이지와 관리자 페이지를 <strong>같은 브라우저</strong>에서 사용하세요.
+          저장된 데이터는 Firebase 클라우드에 보관되어 어느 기기에서 접속해도 동일하게 반영됩니다.
         </p>
       </div>
     </div>
@@ -543,7 +544,7 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><!-- Firebase SDK -->
+<!-- Firebase SDK -->
 
 <script>
 const DEFAULT_DATA = {
@@ -562,8 +563,7 @@ const DEFAULT_DATA = {
     { q: '기업 단체 교육(출강교육)도 가능한가요?', a: '네, 10인 이상 단체의 경우 기업 현장 또는 희망하는 장소로 출강교육을 운영합니다.' },
     { q: '수료증은 어디서, 언제 받을 수 있나요?', a: '교육을 모두 이수(16시간 완료)하신 분께는 수료 후 수료증을 발급해 드립니다.' },
     { q: '관리감독자 해당 여부를 어떻게 확인하나요?', a: '다른 근로자를 직접 지휘·감독하는 직위에 있는 분이라면 해당됩니다. 정확한 여부는 담당자에게 문의해 주세요.' },
-  ],
-  password: 'admin1234'
+  ]
 };
 
 // Firebase REST API URL
@@ -579,13 +579,17 @@ function getData(key) {
 
 function setData(key, val) {
   var statusEl = document.getElementById('firebase-status');
-  // REST API로 Firebase에 저장
-  fetch(FB_URL + '/' + key + '.json', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(val)
+  // 로그인 토큰을 붙여 Firebase에 저장 (규칙상 관리자만 쓰기 가능)
+  getIdToken()
+  .then(function(token) {
+    return fetch(FB_URL + '/' + key + '.json?auth=' + encodeURIComponent(token), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(val)
+    });
   })
   .then(function(res) {
+    if (res.status === 401 || res.status === 403) throw new Error('권한 없음 — 다시 로그인해 주세요');
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return res.json();
   })
@@ -602,37 +606,92 @@ function setData(key, val) {
   localStorage.setItem('miraesol_cache_' + key, JSON.stringify(val));
 }
 
-// Firebase 실시간 수신 → 로컬 캐시 갱신 후 화면 갱신
-// ── LOGIN ──
-const ADMIN_ID = 'admin';
+// ── 로그인 (Firebase Authentication · 이메일/비밀번호) ──
+var FB_API_KEY = "AIzaSyB9VKlohD8kFUI_rQZacE17mmbx3VAzuuw";
+var AUTH = { idToken: null, refreshToken: null, expiresAt: 0, email: '' };
+
+function saveSession() {
+  try { sessionStorage.setItem('miraesol_auth', JSON.stringify({ refreshToken: AUTH.refreshToken, email: AUTH.email })); } catch(e) {}
+}
+function clearSession() {
+  AUTH = { idToken: null, refreshToken: null, expiresAt: 0, email: '' };
+  try { sessionStorage.removeItem('miraesol_auth'); } catch(e) {}
+}
+function applyTokens(d) {
+  AUTH.idToken = d.idToken || d.id_token;
+  AUTH.refreshToken = d.refreshToken || d.refresh_token || AUTH.refreshToken;
+  AUTH.expiresAt = Date.now() + (parseInt(d.expiresIn || d.expires_in || '3600', 10) - 60) * 1000;
+  if (d.email) AUTH.email = d.email;
+  saveSession();
+}
+function refreshIdToken() {
+  if (!AUTH.refreshToken) return Promise.reject(new Error('로그인이 필요합니다'));
+  return fetch('https://securetoken.googleapis.com/v1/token?key=' + FB_API_KEY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(AUTH.refreshToken)
+  }).then(function(r) {
+    if (!r.ok) throw new Error('세션이 만료되었습니다. 다시 로그인해 주세요');
+    return r.json();
+  }).then(function(d) { applyTokens(d); return AUTH.idToken; });
+}
+function getIdToken() {
+  if (AUTH.idToken && Date.now() < AUTH.expiresAt) return Promise.resolve(AUTH.idToken);
+  return refreshIdToken();
+}
+function enterApp() {
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('loginErr').style.display = 'none';
+  initAll();
+}
 function doLogin() {
-  const id = document.getElementById('loginId').value.trim();
-  const pw = document.getElementById('loginPw').value;
-
-  // localStorage에서 비밀번호 직접 읽기
-  let savedPw;
-  try {
-    const raw = localStorage.getItem('miraesol_admin_password');
-    savedPw = raw ? JSON.parse(raw) : DEFAULT_DATA.password;
-  } catch(e) {
-    savedPw = DEFAULT_DATA.password;
-  }
-
-  if (id === ADMIN_ID && pw === savedPw) {
-    document.getElementById('loginWrap').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    document.getElementById('loginErr').style.display = 'none';
-    initAll();
-  } else {
-    document.getElementById('loginErr').style.display = 'block';
-  }
+  var email = document.getElementById('loginId').value.trim();
+  var pw = document.getElementById('loginPw').value;
+  var err = document.getElementById('loginErr');
+  var btn = document.getElementById('loginBtn');
+  err.style.display = 'none';
+  if (!email || !pw) { err.textContent = '이메일과 비밀번호를 입력해 주세요.'; err.style.display = 'block'; return; }
+  if (btn) { btn.disabled = true; btn.textContent = '로그인 중...'; }
+  fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + FB_API_KEY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, password: pw, returnSecureToken: true })
+  })
+  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
+  .then(function(res) {
+    if (!res.ok) {
+      var code = (res.d.error && res.d.error.message) || '';
+      err.textContent = code.indexOf('TOO_MANY_ATTEMPTS') >= 0
+        ? '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.'
+        : '이메일 또는 비밀번호가 올바르지 않습니다.';
+      err.style.display = 'block';
+      return;
+    }
+    applyTokens(res.d);
+    document.getElementById('loginPw').value = '';
+    enterApp();
+  })
+  .catch(function() { err.textContent = '네트워크 오류로 로그인하지 못했습니다.'; err.style.display = 'block'; })
+  .finally(function() { if (btn) { btn.disabled = false; btn.textContent = '로그인'; } });
 }
 function doLogout() {
+  clearSession();
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginWrap').style.display = 'flex';
   document.getElementById('loginId').value = '';
   document.getElementById('loginPw').value = '';
 }
+// 새로고침해도 같은 탭에서는 로그인 유지
+(function restoreSession() {
+  try {
+    var s = JSON.parse(sessionStorage.getItem('miraesol_auth') || 'null');
+    if (s && s.refreshToken) {
+      AUTH.refreshToken = s.refreshToken; AUTH.email = s.email || '';
+      refreshIdToken().then(enterApp).catch(clearSession);
+    }
+  } catch(e) {}
+})();
 
 // ── NAV ──
 function showPage(id) {
@@ -705,16 +764,16 @@ function renderSchedule(list) {
   container.innerHTML = list.map((s, i) => `
     <div class="schedule-item" id="sched-item-${i}">
       <div class="item-header">
-        <span class="item-num">${s.round} 정기과정</span>
+        <span class="item-num">${escHtml(s.round)} 정기과정</span>
         <div style="display:flex;align-items:center;gap:0.6rem;">
-          <span class="status-badge ${s.status}">${s.label}</span>
+          <span class="status-badge ${escHtml(s.status)}">${escHtml(s.label)}</span>
           ${list.length > 1 ? `<button class="btn-del" onclick="deleteSchedule(${i})">삭제</button>` : ''}
         </div>
       </div>
       <div class="field-row-3">
-        <div class="field"><label>회차명</label><input type="text" id="s_round_${i}" value="${s.round}" oninput="refreshItemHeader(${i})"></div>
-        <div class="field"><label>월 표기 (영문, 예: MAY)</label><input type="text" id="s_month_${i}" value="${s.month}" style="text-transform:uppercase;"></div>
-        <div class="field"><label>날짜 (예: 5월 14일(목))</label><input type="text" id="s_date_${i}" value="${s.date}"></div>
+        <div class="field"><label>회차명</label><input type="text" id="s_round_${i}" value="${escHtml(s.round)}" oninput="refreshItemHeader(${i})"></div>
+        <div class="field"><label>월 표기 (영문, 예: MAY)</label><input type="text" id="s_month_${i}" value="${escHtml(s.month)}" style="text-transform:uppercase;"></div>
+        <div class="field"><label>날짜 (예: 5월 14일(목))</label><input type="text" id="s_date_${i}" value="${escHtml(s.date)}"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>상태</label>
@@ -722,7 +781,7 @@ function renderSchedule(list) {
             ${STATUS_OPTIONS.map(o => `<option value="${o.val}" ${s.status===o.val?'selected':''}>${o.label}</option>`).join('')}
           </select>
         </div>
-        <div class="field"><label>상태 표시 텍스트</label><input type="text" id="s_label_${i}" value="${s.label}"></div>
+        <div class="field"><label>상태 표시 텍스트</label><input type="text" id="s_label_${i}" value="${escHtml(s.label)}"></div>
       </div>
     </div>
   `).join('');
@@ -958,18 +1017,31 @@ function updateCompanyPreview() {}
 
 // ── PASSWORD ──
 function changePassword() {
-  const cur   = document.getElementById('pwCurrent').value;
-  const nw    = document.getElementById('pwNew').value;
-  const conf  = document.getElementById('pwConfirm').value;
-  const saved = getData('password') || DEFAULT_DATA.password;
-  if (cur !== saved)        return showToast('현재 비밀번호가 틀렸습니다.', false);
-  if (nw.length < 6)        return showToast('새 비밀번호는 6자 이상이어야 합니다.', false);
-  if (nw !== conf)          return showToast('새 비밀번호가 일치하지 않습니다.', false);
-  setData('password', nw);
-  document.getElementById('pwCurrent').value = '';
-  document.getElementById('pwNew').value = '';
-  document.getElementById('pwConfirm').value = '';
-  showToast('비밀번호가 변경되었습니다.');
+  var cur  = document.getElementById('pwCurrent').value;
+  var nw   = document.getElementById('pwNew').value;
+  var conf = document.getElementById('pwConfirm').value;
+  if (!cur)          return showToast('현재 비밀번호를 입력해 주세요.', false);
+  if (nw.length < 8) return showToast('새 비밀번호는 8자 이상이어야 합니다.', false);
+  if (nw !== conf)   return showToast('새 비밀번호가 일치하지 않습니다.', false);
+  // 현재 비밀번호로 다시 인증한 뒤 변경
+  fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + FB_API_KEY, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: AUTH.email, password: cur, returnSecureToken: true })
+  })
+  .then(function(r) { if (!r.ok) throw new Error('현재 비밀번호가 틀렸습니다.'); return r.json(); })
+  .then(function(d) {
+    return fetch('https://identitytoolkit.googleapis.com/v1/accounts:update?key=' + FB_API_KEY, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken: d.idToken, password: nw, returnSecureToken: true })
+    });
+  })
+  .then(function(r) { if (!r.ok) throw new Error('비밀번호 변경에 실패했습니다.'); return r.json(); })
+  .then(function(d) {
+    applyTokens(d);
+    ['pwCurrent','pwNew','pwConfirm'].forEach(function(id){ document.getElementById(id).value = ''; });
+    showToast('비밀번호가 변경되었습니다.');
+  })
+  .catch(function(e) { showToast(e.message, false); });
 }
 
 // ── DASHBOARD ──
@@ -985,7 +1057,7 @@ function updateDash() {
 }
 
 // ── UTIL ──
-function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escHtml(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 // Enter key login
 document.getElementById('loginId').addEventListener('keydown', function(e) { if(e.key==='Enter') doLogin(); });
@@ -995,6 +1067,7 @@ document.getElementById('loginId').addEventListener('keydown', function(e) { if(
   var statusEl = document.getElementById('firebase-status');
   if (statusEl) { statusEl.innerHTML = '🟡 Firebase 연결 중...'; statusEl.style.color = '#fbbf24'; }
 
+  var firstLoadDone = false;
   function applyFirebaseToUI(data) {
     if (!data) return;
     // 캐시 업데이트
@@ -1002,7 +1075,10 @@ document.getElementById('loginId').addEventListener('keydown', function(e) { if(
       localStorage.setItem('miraesol_cache_' + key, JSON.stringify(data[key]));
     });
     if (statusEl) { statusEl.innerHTML = '🟢 Firebase 연결됨'; statusEl.style.color = '#4ade80'; }
-    // 현재 열린 페이지 갱신 (로그인 후)
+    // 최초 1회만 열린 화면 갱신 (이후 자동 갱신은 편집 중인 내용을 덮어쓰지 않음)
+    if (firstLoadDone) { updateDash(); return; }
+    firstLoadDone = true;
+    if (document.getElementById('app').style.display !== 'flex') return;
     var activePage = document.querySelector('.page.active');
     if (activePage) {
       var pid = activePage.id.replace('page-', '');
@@ -1025,19 +1101,6 @@ document.getElementById('loginId').addEventListener('keydown', function(e) { if(
         return res.json();
       })
       .then(function(data) {
-        if (!data) {
-          // Firebase 비어있으면 기본 데이터 올리기
-          var upload = {};
-          ['notice','schedule','fee','contact','faq','footer','company'].forEach(function(k) {
-            upload[k] = DEFAULT_DATA[k];
-            try { var old = localStorage.getItem('miraesol_admin_' + k); if (old) upload[k] = JSON.parse(old); } catch(e) {}
-          });
-          return fetch('https://miraesol-safety-default-rtdb.firebaseio.com/miraesol.json', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(upload)
-          }).then(function() { return upload; });
-        }
         return data;
       })
       .then(function(data) { applyFirebaseToUI(data); })
